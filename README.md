@@ -95,7 +95,7 @@ src/intent_se/
 │   ├── severity.py      Ridge regression severity scorer
 │   └── evaluate.py      confusion matrix, t-SNE, result tables
 ├── control/
-│   └── mapping.py       NLP → DSP parameter controller
+│   └── parameter_probe.py   exploratory: do the parameters respond? (unfinished)
 └── cli/
     ├── train_nlp.py     trains and evaluates the NLP models
     └── run_realtime.py  live system: soundcard + typed complaints
@@ -284,44 +284,67 @@ Where the classifier fails it fails gracefully: `TOO_SHARP` is the main error
 source, and such a complaint handled as `TOO_LOUD` still moves the audio in a
 perceptually reasonable direction.
 
-## The open problem
+## The open problem: mapping severity to magnitude
 
-**The parameter controller knows which direction to move. It does not yet know
-how far.**
+**This part of the system was not finished, and the repository does not pretend
+otherwise.** `control/parameter_probe.py` is a probe, not a controller.
 
-The direction of every adjustment is grounded in signal processing theory and
-implemented:
+From the thesis:
 
-| Intent | Response |
+> The major problem with the process of translating a user's complaint into a
+> change of a parameter's value is that there is no mathematically accurate
+> ground truth that relates a particular complaint to the corresponding value of
+> that parameter. The general direction of each parameter manipulation can be
+> understood through signal processing theory; for example, manipulating the
+> suppression exponent β upwards in case the user complains about the noise will
+> make the Wiener gain function grow steeper and hence suppress more strongly
+> frequency bins that are affected by noise. However, since it is not possible to
+> calculate analytically how strong the effect should be, there is an inevitable
+> level of subjectivity in the relation between the numeric severity score of 0.6
+> and 0.8 and the actual change of the parameter. For example, one user can be
+> satisfied with either of those levels while the other feels a great difference
+> between them.
+>
+> Due to time constraints, a complete perceptual validation and mapping of the
+> parameters was not implemented. This remains as an open challenge for further
+> work.
+
+### What was established
+
+The **direction** of each manipulation follows from signal processing theory:
+
+| Intent | Direction |
 |---|---|
-| `TOO_NOISY` | ↑ β — steepen the gain curve, suppress noise harder |
+| `TOO_NOISY` | ↑ β — steepen the gain curve, suppress noise bins harder |
 | `SPEECH_UNCLEAR` | ↓ β — flatten it, preserve high-frequency detail |
 | `TOO_LOUD` | ↓ broadband output gain |
 | `TOO_QUIET` | ↑ broadband output gain |
 | `TOO_SHARP` | ↓ high-frequency tilt |
 | `BALANCED` | decay back toward defaults |
 
-This was confirmed to work: manually adjusting β during real-time operation
-produces clearly audible changes in suppression, exactly as theory predicts.
+And that the path from a classified sentence through to the audio is intact:
+driving β while the stream is running produces a clearly audible change in
+suppression, exactly as the theory predicts. That is what the probe exists to
+test — one parameter at a time, does moving it have the expected effect.
 
-What is missing is the magnitude. If the severity scorer outputs 0.6 for one
-complaint and 0.8 for another, how much larger should the second parameter change
-be? Is the relationship linear? Does it saturate? There is no analytical answer,
-because it depends on how a real user perceives the difference between two
-adjustment levels in their own acoustic environment.
+### What was not
 
-Establishing it requires a structured listening study — recruiting hearing-aid
-users, presenting controlled variations of each parameter across the severity
-range, having them rate which adjustments felt appropriate, and fitting a mapping
-function to the results. That is a research project in its own right.
+Any calibrated relationship between a severity score and a step size. The
+`probe_delta` values in `INTENT_ACTIONS` are **arbitrary steps chosen to be
+audible but not destructive**, so that an effect can be heard at all. They carry
+no perceptual meaning, and the linear severity → magnitude relation is a
+placeholder rather than a finding.
 
-The `max_delta` values in `control/mapping.py` are therefore provisional
-constants chosen to produce an audible but not destructive change, and are marked
-as such in the code.
+Establishing the real mapping needs a structured listening study: recruiting
+hearing-aid users, presenting controlled variations of each parameter across the
+severity range, having them rate which adjustments felt appropriate, and fitting
+a mapping function to the results. That is a research project in its own right,
+and it is the most important next step for this work.
 
 ## Limitations
 
-1. **The perceptual calibration study above** — the largest gap.
+1. **The perceptual calibration study above** — the largest gap, and the reason
+   the parameter mapping is a probe rather than a controller.
 2. **The dataset is LLM-generated.** Real complaints are messier and more varied,
    and the severity labels reflect a single annotator's judgement rather than a
    standardised benchmark. Real-user speech recognition output will also be

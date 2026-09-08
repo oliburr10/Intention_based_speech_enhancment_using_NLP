@@ -1,34 +1,57 @@
-"""Mapping (intent, severity) onto DSP parameter changes.
+"""Exploratory probe: do the DSP parameters respond when the NLP output moves them?
 
 .. warning::
-   **This module is the open research question of the thesis, and its numbers
-   are not calibrated.**
+   **This module is not a finished controller. It is a test harness for an
+   open problem, and its magnitudes are not validated.**
 
-   The *direction* of every adjustment below is theoretically grounded and was
-   confirmed to work: manually changing ``beta`` during real-time operation
-   produces clearly audible differences in noise suppression, exactly as the
-   signal processing theory predicts. The wiring is correct.
+From the thesis:
 
-   The *magnitude* is not derivable. If the severity scorer outputs 0.6 for one
-   complaint and 0.8 for another, how much larger should the second parameter
-   change be? Should the relationship be linear? Should it saturate? There is
-   no analytical answer, because the right answer depends on how a real user
-   perceives the difference between two adjustment levels in their own
-   acoustic environment. Establishing it requires a structured listening study:
-   recruit hearing-aid users, present controlled variations of each parameter
-   across the severity range, have them rate which adjustments felt
-   appropriate, and fit a mapping function to the results.
+    The major problem with the process of translating a user's complaint into a
+    change of a parameter's value is that there is no mathematically accurate
+    ground truth that relates a particular complaint to the corresponding value
+    of that parameter. The general direction of each parameter manipulation can
+    be understood through signal processing theory; for example, manipulating
+    the suppression exponent β upwards in case the user complains about the
+    noise will make the Wiener gain function grow steeper and hence suppress
+    more strongly frequency bins that are affected by noise. However, since it
+    is not possible to calculate analytically how strong the effect should be,
+    there is an inevitable level of subjectivity in the relation between the
+    numeric severity score of 0.6 and 0.8 and the actual change of the
+    parameter. For example, one user can be satisfied with either of those
+    levels while the other feels a great difference between them.
 
-   The ``max_delta`` values in :data:`INTENT_ACTIONS` are therefore **plausible
-   placeholders chosen to produce an audible but not destructive change**, not
-   validated constants. Treat every number here as provisional until the
-   perceptual study is run.
+    Due to time constraints, a complete perceptual validation and mapping of
+    the parameters was not implemented. This remains as an open challenge for
+    further work.
 
-Direction rationale
--------------------
+What this module therefore *is*
+-------------------------------
+
+A way to exercise one parameter at a time and confirm that moving it produces
+the effect signal processing theory predicts — that the wiring from a classified
+sentence through to the audio path is intact and audible. That much was verified:
+adjusting ``beta`` during real-time operation produces clearly audible changes in
+noise suppression.
+
+What it is *not*
+----------------
+
+A calibrated mapping from severity to magnitude. The ``probe_delta`` values in
+:data:`INTENT_ACTIONS` are **arbitrary step sizes chosen to be audible but not
+destructive**, so that the effect of a change can be heard at all. They carry no
+perceptual meaning. Establishing real values requires a structured listening
+study: recruiting hearing-aid users, presenting controlled variations of each
+parameter across the severity range, having them rate which adjustments felt
+appropriate, and fitting a mapping function to the results.
+
+Directions, which *are* grounded
+--------------------------------
+
+Only the direction column below follows from signal processing theory. The step
+sizes do not.
 
 ========================  ==================================================
-Intent                    Response
+Intent                    Direction of manipulation
 ========================  ==================================================
 ``TOO_NOISY``             Raise ``beta``: steepen the Wiener gain curve so
                           noise-dominated bins are suppressed harder. Also
@@ -57,62 +80,63 @@ __all__ = [
     "INTENT_ACTIONS",
     "PARAM_LIMITS",
     "IntentAction",
-    "ParameterController",
+    "ParameterProbe",
     "ParameterUpdate",
 ]
 
 
 @dataclass(frozen=True)
 class IntentAction:
-    """Which parameter an intent moves, in which direction, and how far.
+    """Which parameter an intent moves, in which direction, and by how much.
 
     Attributes
     ----------
     parameter:
         Name of the DSP parameter to change.
     direction:
-        ``+1`` to increase, ``-1`` to decrease. **This part is grounded.**
-    max_delta:
-        Change applied at severity 1.0. **This part is an uncalibrated
-        placeholder** -- see the module docstring.
+        ``+1`` to increase, ``-1`` to decrease. **Grounded in signal processing
+        theory.**
+    probe_delta:
+        Step applied at severity 1.0. **An arbitrary probe value, not a
+        calibrated one** -- see the module docstring.
     secondary:
-        Optional additional ``{parameter: (direction, max_delta)}`` moves.
+        Optional additional ``{parameter: (direction, probe_delta)}`` moves.
     """
 
     parameter: str
     direction: int
-    max_delta: float
+    probe_delta: float
     secondary: dict[str, tuple[int, float]] = field(default_factory=dict)
 
 
-#: The mapping table. Directions are grounded in signal processing theory;
-#: magnitudes await the perceptual calibration study.
+#: The probe table. Directions are grounded in signal processing theory; the
+#: step sizes are arbitrary and await the perceptual calibration study.
 INTENT_ACTIONS: dict[str, IntentAction] = {
     "TOO_NOISY": IntentAction(
         parameter="beta",
         direction=+1,
-        max_delta=1.0,
+        probe_delta=1.0,
         secondary={"gain_floor": (-1, 0.04)},
     ),
     "SPEECH_UNCLEAR": IntentAction(
         parameter="beta",
         direction=-1,
-        max_delta=0.5,
+        probe_delta=0.5,
         secondary={"tilt": (+1, 3.0)},
     ),
-    "TOO_LOUD": IntentAction(parameter="output_gain", direction=-1, max_delta=0.5),
-    "TOO_QUIET": IntentAction(parameter="output_gain", direction=+1, max_delta=1.0),
-    "TOO_SHARP": IntentAction(parameter="tilt", direction=-1, max_delta=8.0),
+    "TOO_LOUD": IntentAction(parameter="output_gain", direction=-1, probe_delta=0.5),
+    "TOO_QUIET": IntentAction(parameter="output_gain", direction=+1, probe_delta=1.0),
+    "TOO_SHARP": IntentAction(parameter="tilt", direction=-1, probe_delta=8.0),
 }
 
 #: Valid range for each parameter. These MUST match the clamps applied inside
 #: :class:`~intent_se.audio.wiener.ParametricWienerFilter.set_parameters`.
 #:
 #: The filter clamps whatever it is handed, so the audio path is safe either
-#: way. Clamping here as well keeps the controller's *reported* state equal to
-#: what the DSP actually applies -- otherwise a run of complaints in one
-#: direction walks a parameter past its limit and the controller reports a
-#: value (a negative gain floor, say) that the filter never used.
+#: way. Clamping here as well keeps the probe's *reported* state equal to what
+#: the DSP actually applies -- otherwise a run of complaints in one direction
+#: walks a parameter past its limit and the probe reports a value (a negative
+#: gain floor, say) that the filter never used.
 PARAM_LIMITS: dict[str, tuple[float, float]] = {
     "beta": (0.1, 4.0),
     "gain_floor": (0.0, 1.0),
@@ -123,7 +147,7 @@ PARAM_LIMITS: dict[str, tuple[float, float]] = {
 
 @dataclass
 class ParameterUpdate:
-    """One controller decision, with enough context to be logged and audited."""
+    """One probe step, with enough context to be logged and audited."""
 
     intent: str
     severity: float
@@ -142,13 +166,17 @@ class ParameterUpdate:
         )
 
 
-class ParameterController:
-    """Translates classifier and severity output into DSP parameter updates.
+class ParameterProbe:
+    """Drives one DSP parameter at a time from classifier and severity output.
 
-    Adjustments are **relative and cumulative**: each complaint nudges the
-    current parameter values rather than jumping to an absolute target, so a
-    user can say "still too noisy" repeatedly and keep moving in that
-    direction. Values are clamped by the filter itself.
+    Used to answer a single question: **does the parameter actually move, and
+    can the effect be heard?** It is not a calibrated controller -- the step
+    sizes carry no perceptual meaning. See the module docstring.
+
+    Steps are **relative and cumulative**: each complaint nudges the current
+    values rather than jumping to an absolute target, so a user can say "still
+    too noisy" repeatedly and keep moving in that direction. Values are clamped
+    to :data:`PARAM_LIMITS`, matching the filter's own clamps.
 
     Parameters
     ----------
@@ -167,8 +195,8 @@ class ParameterController:
 
     Examples
     --------
-    >>> ctrl = ParameterController()
-    >>> update = ctrl.apply("TOO_NOISY", severity=0.8, confidence=0.95)
+    >>> probe = ParameterProbe()
+    >>> update = probe.apply("TOO_NOISY", severity=0.8, confidence=0.95)
     >>> update.applied
     True
     >>> update.parameters["beta"] > 1.0
@@ -205,7 +233,7 @@ class ParameterController:
         return dict(self.parameters)
 
     def apply(self, intent: str, severity: float, confidence: float = 1.0) -> ParameterUpdate:
-        """Compute and record the parameter change for one classified sentence.
+        """Compute and record the parameter step for one classified sentence.
 
         Parameters
         ----------
@@ -252,21 +280,22 @@ class ParameterController:
         if severity < self.min_severity:
             return record(False, f"severity below {self.min_severity}")
 
-        # Linear severity -> magnitude. Whether the true relationship is linear
-        # or saturating is precisely what the perceptual study must determine.
-        self._nudge(action.parameter, action.direction, action.max_delta, severity)
-        for param, (direction, max_delta) in action.secondary.items():
-            self._nudge(param, direction, max_delta, severity)
+        # Linear severity -> magnitude, chosen for want of anything better.
+        # Whether the true relationship is linear, saturating, or something
+        # else entirely is precisely what the perceptual study must determine.
+        self._nudge(action.parameter, action.direction, action.probe_delta, severity)
+        for param, (direction, probe_delta) in action.secondary.items():
+            self._nudge(param, direction, probe_delta, severity)
 
         return record(True)
 
-    def _nudge(self, parameter: str, direction: int, max_delta: float, severity: float) -> None:
-        """Move one parameter by ``direction * max_delta * severity``, then clamp.
+    def _nudge(self, parameter: str, direction: int, probe_delta: float, severity: float) -> None:
+        """Move one parameter by ``direction * probe_delta * severity``, then clamp.
 
         Adjustments are cumulative, so repeated complaints in the same direction
         would otherwise walk a parameter out of its valid range.
         """
-        value = self.parameters[parameter] + direction * max_delta * severity
+        value = self.parameters[parameter] + direction * probe_delta * severity
         low, high = PARAM_LIMITS[parameter]
         self.parameters[parameter] = float(min(max(value, low), high))
 
@@ -275,7 +304,9 @@ class ParameterController:
     def bind(self, enhancer) -> None:  # noqa: ANN001 - avoids a circular import
         """Push the current parameters into a :class:`~intent_se.audio.SpeechEnhancer`.
 
-        The enhancer clamps whatever it receives, so a wild classifier output
-        cannot destabilise the audio path.
+        This is the step that makes a probe audible: the enhancer picks the new
+        values up on its next frame, without interrupting the stream. It clamps
+        whatever it receives, so a wild classifier output cannot destabilise the
+        audio path.
         """
         enhancer.set_parameters(**self.parameters)

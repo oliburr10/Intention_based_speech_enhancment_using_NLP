@@ -1,10 +1,14 @@
-"""The bridge between the NLP output and the DSP parameters."""
+"""Exploratory link between the NLP output and the DSP parameters.
 
-from intent_se.control.mapping import (
+Not a finished controller -- see :mod:`intent_se.control.parameter_probe` for
+what was and was not established.
+"""
+
+from intent_se.control.parameter_probe import (
     INTENT_ACTIONS,
     PARAM_LIMITS,
     IntentAction,
-    ParameterController,
+    ParameterProbe,
     ParameterUpdate,
 )
 
@@ -12,6 +16,6 @@ __all__ = [
     "INTENT_ACTIONS",
     "PARAM_LIMITS",
     "IntentAction",
-    "ParameterController",
+    "ParameterProbe",
     "ParameterUpdate",
 ]

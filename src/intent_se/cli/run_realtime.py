@@ -34,7 +34,7 @@ from pathlib import Path
 
 from intent_se.audio.pipeline import SpeechEnhancer
 from intent_se.config import AudioConfig, NLPConfig
-from intent_se.control.mapping import ParameterController
+from intent_se.control.parameter_probe import ParameterProbe
 from intent_se.nlp.classifier import IntentClassifier
 from intent_se.nlp.embeddings import SentenceEmbedder
 from intent_se.nlp.severity import SeverityScorer
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     embedder = SentenceEmbedder(NLPConfig())
     classifier = IntentClassifier.load(classifier_path)
     scorer = SeverityScorer.load(scorer_path)
-    controller = ParameterController()
+    probe = ParameterProbe()
 
     # -- Audio --------------------------------------------------------
     enhancer = SpeechEnhancer(
@@ -140,12 +140,12 @@ def main(argv: list[str] | None = None) -> int:
             if text in {":quit", ":q", ":exit"}:
                 break
             if text == ":params":
-                for key, value in sorted(controller.parameters.items()):
+                for key, value in sorted(probe.parameters.items()):
                     print(f"    {key:<12s} {value:.3f}")
                 continue
             if text == ":reset":
-                controller.reset()
-                controller.bind(enhancer)
+                probe.reset()
+                probe.bind(enhancer)
                 print("    parameters restored to defaults")
                 continue
 
@@ -154,8 +154,8 @@ def main(argv: list[str] | None = None) -> int:
             confidence = float(classifier.confidence(embedding)[0])
             severity = scorer.predict_one(embedding)
 
-            update = controller.apply(intent, severity, confidence)
-            controller.bind(enhancer)
+            update = probe.apply(intent, severity, confidence)
+            probe.bind(enhancer)
             print("   ", update)
 
     except KeyboardInterrupt:
