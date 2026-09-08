@@ -1,7 +1,5 @@
 """Train and evaluate the NLP pipeline.
 
-Reproduces the full model-selection protocol:
-
 1. Load the dataset and split it 70 / 15 / 15, stratified.
 2. Embed every sentence with ``all-mpnet-base-v2``.
 3. Five-fold stratified CV on the development pool (train + val).
@@ -9,13 +7,6 @@ Reproduces the full model-selection protocol:
    classifier with the smallest validation-to-test drop among the CV leaders.
 5. Fit the Ridge severity scorer, selecting alpha by CV.
 6. Write models, tables and figures to disk.
-
-Usage
------
-::
-
-    python -m intent_se.cli.train_nlp --output-dir artifacts
-    python -m intent_se.cli.train_nlp --no-figures --data data/complaints_v4.csv
 """
 
 from __future__ import annotations
