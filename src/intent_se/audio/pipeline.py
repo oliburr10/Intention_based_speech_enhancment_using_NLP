@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import threading
 from dataclasses import dataclass
+
 import numpy as np
+
 from intent_se.audio.imcra import IMCRA
 from intent_se.audio.stft import SlidingSTFT
 from intent_se.audio.wiener import ParametricWienerFilter

@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 import numpy as np
+
 from intent_se.config import IMCRAConfig
+
 __all__ = ["IMCRA"]
 
 _EPS = 1e-12
@@ -65,7 +68,7 @@ class IMCRA:
         self._lambda_d = np.zeros(n_bins)
         self._seeded = False
 
-  
+
     @property
     def is_seeded(self) -> bool:
         """Whether :meth:`seed` has been called."""
@@ -94,11 +97,11 @@ class IMCRA:
         self._tracker_tilde.reset(floor)
         self._seeded = True
 
-  
+
     # Per-frame update
 
     def update(self, power: np.ndarray, xi: np.ndarray | None = None) -> np.ndarray:
-      
+
         """Process one frame and return the updated noise PSD.
         """
         cfg = self.cfg
