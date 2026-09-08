@@ -1,22 +1,7 @@
-"""End-to-end real-time speech enhancer.
-
-Wires the sliding STFT, IMCRA noise estimator and parametric Wiener filter into
-a single object that can be driven either by a soundcard callback
-(:meth:`SpeechEnhancer.process_block`) or over a whole file
-(:meth:`SpeechEnhancer.process_signal`).
-
-The enhancer owns the DSP parameters, so the NLP side updates audio behaviour
-by calling :meth:`SpeechEnhancer.set_parameters` from another thread while
-audio keeps streaming.
-"""
-
 from __future__ import annotations
-
 import threading
 from dataclasses import dataclass
-
 import numpy as np
-
 from intent_se.audio.imcra import IMCRA
 from intent_se.audio.stft import SlidingSTFT
 from intent_se.audio.wiener import ParametricWienerFilter
