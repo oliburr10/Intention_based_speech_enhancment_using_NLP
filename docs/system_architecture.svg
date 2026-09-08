@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" width="1140" height="500"
+     font-family="Charter, Georgia, 'DejaVu Serif', 'Times New Roman', serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#cc0000"/>
+    </marker>
+    <style>
+      .lbl  { font-size: 14px; font-weight: bold; fill: #1a1a1a; text-anchor: middle; }
+      .grp  { font-size: 17px; font-weight: bold; }
+      .math { font-family: 'DejaVu Sans', 'Segoe UI Symbol', 'Arial Unicode MS', sans-serif; }
+      .sig  { font-size: 12px; fill: #1a1a1a; text-anchor: middle; }
+      .fb   { font-size: 12px; fill: #cc0000; text-anchor: end; }
+      .conn { stroke: #1a1a1a; stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+      .fbk  { stroke: #cc0000; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; marker-end: url(#ahr); }
+      .data { fill: #d9ead3; stroke: #5f9e46; stroke-width: 1.6; }
+      .mod  { fill: #d5d5ef; stroke: #7b7bcc; stroke-width: 1.6; }
+      .ctl  { fill: #fce5cd; stroke: #e69138; stroke-width: 1.6; }
+    </style>
+  </defs>
+
+  <rect width="1140" height="500" fill="#ffffff"/>
+
+  <!-- ===== Audio Processing Pipeline ===== -->
+  <text x="570" y="27" class="grp" fill="#4a7c3f" text-anchor="middle">Audio Processing Pipeline</text>
+  <rect x="30" y="38" width="1080" height="120" rx="8" fill="#eaf5e6" stroke="#4a7c3f" stroke-width="1.6" stroke-dasharray="8 5"/>
+
+  <rect x="48" y="69" width="146" height="58" rx="4" class="data"/>
+  <text x="121" y="93" class="lbl">Microphone<tspan x="121" dy="18">Input</tspan></text>
+
+  <rect x="228" y="69" width="146" height="58" rx="4" class="mod"/>
+  <text x="301" y="93" class="lbl">STFT<tspan x="301" dy="18">Analysis</tspan></text>
+
+  <rect x="407" y="69" width="146" height="58" rx="4" class="mod"/>
+  <text x="480" y="86" class="lbl">IMCRA<tspan x="480" dy="17">Noise</tspan><tspan x="480" dy="17">Estimator</tspan></text>
+
+  <rect x="587" y="69" width="146" height="58" rx="4" class="mod"/>
+  <text x="660" y="86" class="lbl">Parametric<tspan x="660" dy="17">Wiener</tspan><tspan x="660" dy="17">Filter</tspan></text>
+
+  <rect x="766" y="69" width="146" height="58" rx="4" class="mod"/>
+  <text x="839" y="93" class="lbl">ISTFT Synthesis<tspan x="839" dy="18">(WOLA)</tspan></text>
+
+  <rect x="946" y="69" width="146" height="58" rx="4" class="data"/>
+  <text x="1019" y="86" class="lbl">Enhanced<tspan x="1019" dy="17">Audio</tspan><tspan x="1019" dy="17">Output</tspan></text>
+
+  <path class="conn" d="M 194 98 H 226"/>
+  <path class="conn" d="M 374 98 H 405"/>
+  <path class="conn" d="M 553 98 H 585"/>
+  <path class="conn" d="M 733 98 H 764"/>
+  <path class="conn" d="M 912 98 H 944"/>
+  <text x="570" y="62" class="sig math">λ̃<tspan font-size="9" dy="3">d</tspan><tspan dy="-3">[k, ℓ]</tspan></text>
+
+  <!-- ===== NLP Classification Pipeline ===== -->
+  <rect x="30" y="215" width="1080" height="250" rx="8" fill="#eeeef9" stroke="#6a6ac0" stroke-width="1.6" stroke-dasharray="8 5"/>
+  <text x="40" y="482" class="grp" fill="#6a6ac0">NLP Classification Pipeline</text>
+
+  <rect x="48" y="240" width="146" height="58" rx="4" class="data"/>
+  <text x="121" y="264" class="lbl">User Terminal<tspan x="121" dy="18">Input</tspan></text>
+
+  <rect x="228" y="240" width="146" height="58" rx="4" class="mod"/>
+  <text x="301" y="264" class="lbl" font-size="13">Sentence Encoder<tspan x="301" dy="18">all-mpnet-v2</tspan></text>
+
+  <rect x="407" y="240" width="146" height="58" rx="4" class="data"/>
+  <text x="480" y="276" class="lbl math">e ∈ ℝ<tspan font-size="10" dy="-8">768</tspan></text>
+
+  <rect x="587" y="240" width="146" height="58" rx="4" class="mod"/>
+  <text x="660" y="264" class="lbl">Intent Classifier<tspan x="660" dy="18">(SVM)</tspan></text>
+
+  <rect x="766" y="240" width="146" height="58" rx="4" class="ctl"/>
+  <text x="839" y="264" class="lbl">Parameter<tspan x="839" dy="18">Controller</tspan></text>
+
+  <rect x="946" y="240" width="146" height="58" rx="4" class="data"/>
+  <text x="1019" y="264" class="lbl">DSP Parameters</text>
+  <text x="1019" y="285" class="sig math" font-size="11">β, G<tspan font-size="8" dy="3">floor</tspan><tspan dy="-3">, α</tspan><tspan font-size="8" dy="3">d</tspan><tspan dy="-3">, α</tspan><tspan font-size="8" dy="3">s</tspan></text>
+
+  <rect x="587" y="360" width="146" height="58" rx="4" class="mod"/>
+  <text x="660" y="384" class="lbl" font-size="13">Severity Regressor<tspan x="660" dy="18">(Ridge)</tspan></text>
+
+  <path class="conn" d="M 194 269 H 405"/>
+  <path class="conn" d="M 553 269 H 585"/>
+  <path class="conn" d="M 733 269 H 764"/>
+  <path class="conn" d="M 912 269 H 944"/>
+  <path class="conn" d="M 480 298 V 389 H 585"/>
+  <path class="conn" d="M 733 389 H 839 V 300"/>
+
+  <!-- ===== Feedback: DSP parameters back into the audio modules ===== -->
+  <path class="fbk" d="M 1019 240 V 186 H 480 V 129"/>
+  <path class="fbk" d="M 1019 240 V 205 H 660 V 129"/>
+  <text x="1005" y="181" class="fb">IMCRA update</text>
+  <text x="1005" y="200" class="fb">NLP parameter update</text>
+
+  <!-- ===== Legend ===== -->
+  <rect x="42" y="344" width="116" height="112" rx="4" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.4"/>
+  <rect x="54" y="356" width="92" height="26" rx="3" class="data"/>
+  <text x="100" y="374" class="lbl">Data</text>
+  <rect x="54" y="388" width="92" height="26" rx="3" class="mod"/>
+  <text x="100" y="406" class="lbl">Module</text>
+  <rect x="54" y="420" width="92" height="26" rx="3" class="ctl"/>
+  <text x="100" y="438" class="lbl">Control</text>
+</svg>

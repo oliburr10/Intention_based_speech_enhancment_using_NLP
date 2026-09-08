@@ -23,28 +23,17 @@ physical controls, so adjustment must happen through an app or by voice.
 
 ## System architecture
 
-```
-                        ┌──────────────────────────────────────────┐
-  "the background       │  NLP PIPELINE                            │
-   noise is             │                                          │
-   unbearable"  ───────►│  all-mpnet-base-v2  ──►  intent (6-way)   │
-                        │  768-dim embedding  ──►  severity [0,1]   │
-                        └────────────────────┬─────────────────────┘
-                                             │
-                                   ┌─────────▼──────────┐
-                                   │ PARAMETER          │
-                                   │ CONTROLLER         │
-                                   └─────────┬──────────┘
-                                             │  β, gain, tilt
-                        ┌────────────────────▼─────────────────────┐
-  mic  ───────────────► │  REAL-TIME AUDIO PIPELINE                │ ──►  ear
-  512 samples/callback  │                                          │
-                        │  sliding buffer → sqrt-Hann → rFFT(2048) │
-                        │  → IMCRA noise PSD                       │
-                        │  → parametric Wiener filter (β)          │
-                        │  → irFFT → overlap-add                   │
-                        └──────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/system_architecture.png" alt="System architecture: the audio processing pipeline above, the NLP classification pipeline below, and the parameter controller feeding DSP updates back into the IMCRA noise estimator and the parametric Wiener filter" width="100%">
+</p>
+
+Two pipelines run concurrently. The **audio pipeline** (top) enhances the
+microphone signal frame by frame and never blocks. The **NLP pipeline** (bottom)
+turns a typed complaint into an intent class and a severity score, which the
+parameter controller converts into DSP updates — the red paths — applied to the
+running audio without interrupting it.
+
+The vector source is [`docs/system_architecture.svg`](docs/system_architecture.svg).
 
 ## Installation
 
