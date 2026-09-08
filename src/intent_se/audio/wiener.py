@@ -1,39 +1,5 @@
-"""Parametric Wiener filter with an externally tunable suppression exponent.
-
-The standard Wiener gain minimises the mean square error between the estimated
-and true clean speech:
-
-.. math::
-
-    G(k) = \\frac{\\xi(k)}{1 + \\xi(k)}
-
-where :math:`\\xi` is the a priori SNR. That is optimal under its assumptions
-but has two practical problems:
-
-1. High-frequency bins usually have lower SNR, so the filter suppresses them
-   hard and starts behaving like a low-pass filter -- speech sounds dull.
-2. The gain curve is fixed by the SNR estimate. There is no way to make the
-   suppression gentler or more aggressive.
-
-The parametric form introduces an exponent :math:`\\beta`:
-
-.. math::
-
-    G(k) = \\left( \\frac{\\xi(k)}{1 + \\xi(k)} \\right)^{\\beta}
-
-Low :math:`\\beta` flattens the curve and preserves more high-frequency content;
-high :math:`\\beta` steepens it and suppresses noise more aggressively.
-:math:`\\beta = 1` recovers the standard Wiener filter exactly.
-
-**This exponent is the parameter the NLP side controls.** Without a tunable
-parameter there would be nothing for the classifier output to change; every
-part of the NLP pipeline is ultimately working toward updating it.
-"""
-
 from __future__ import annotations
-
 import numpy as np
-
 from intent_se.config import WienerConfig
 
 __all__ = ["ParametricWienerFilter"]
@@ -43,17 +9,6 @@ _EPS = 1e-12
 
 class ParametricWienerFilter:
     """Spectral gain computation with a decision-directed a priori SNR.
-
-    Parameters
-    ----------
-    n_bins:
-        Number of frequency bins.
-    config:
-        Filter parameters. ``beta``, ``output_gain`` and ``tilt`` are the
-        NLP-controllable ones and can be changed at any time via
-        :meth:`set_parameters`.
-    sample_rate, n_fft:
-        Needed only to build the tilt shelf. Defaults match ``AudioConfig``.
     """
 
     def __init__(
@@ -83,10 +38,8 @@ class ParametricWienerFilter:
         # Normalised bin frequencies in [0, 1], used by the tilt shelf.
         self._norm_freq = np.linspace(0.0, 1.0, n_bins)
 
-    # ------------------------------------------------------------------
-    # Parameter control -- this is the NLP -> DSP entry point
-    # ------------------------------------------------------------------
-
+    
+    # Parameter control (this is the NLP -> DSP entry point)
     def set_parameters(
         self,
         *,
@@ -95,22 +48,7 @@ class ParametricWienerFilter:
         output_gain: float | None = None,
         tilt: float | None = None,
     ) -> None:
-        """Update filter parameters while the stream is running.
-
-        All arguments are keyword-only and optional; omitted parameters keep
-        their current value. Values are clamped to safe ranges so a bad
-        classifier output cannot destabilise the audio path.
-
-        Parameters
-        ----------
-        beta:
-            Suppression exponent, clamped to ``[0.1, 4.0]``.
-        gain_floor:
-            Minimum per-bin gain, clamped to ``[0.0, 1.0]``.
-        output_gain:
-            Broadband linear gain, clamped to ``[0.1, 4.0]``.
-        tilt:
-            High-frequency tilt in dB, clamped to ``[-12.0, 12.0]``.
+        """Update filter parameters while the stream is running
         """
         if beta is not None:
             self.beta = float(np.clip(beta, 0.1, 4.0))
@@ -136,10 +74,8 @@ class ParametricWienerFilter:
         self._prev_clean_power[:] = 0.0
         self._xi[:] = self._xi_min
 
-    # ------------------------------------------------------------------
-    # Per-frame processing
-    # ------------------------------------------------------------------
 
+    # Per-frame processing
     @property
     def a_priori_snr(self) -> np.ndarray:
         """The most recent a priori SNR estimate, one value per bin."""
@@ -147,24 +83,6 @@ class ParametricWienerFilter:
 
     def compute_gain(self, power: np.ndarray, noise_psd: np.ndarray) -> np.ndarray:
         """Compute the spectral gain for one frame.
-
-        Uses the Ephraim-Malah decision-directed estimator for the a priori
-        SNR, which blends the previous frame's clean-speech estimate with the
-        current maximum-likelihood estimate. This is what keeps musical noise
-        under control: a purely instantaneous SNR estimate fluctuates wildly
-        between frames and the gain fluctuates with it.
-
-        Parameters
-        ----------
-        power:
-            Periodogram of the current frame, shape ``(n_bins,)``.
-        noise_psd:
-            Noise PSD estimate from IMCRA, shape ``(n_bins,)``.
-
-        Returns
-        -------
-        np.ndarray
-            Real gain in ``[gain_floor, 1]`` per bin, shape ``(n_bins,)``.
         """
         noise_psd = np.maximum(noise_psd, _EPS)
 
@@ -197,20 +115,5 @@ class ParametricWienerFilter:
         return gain
 
     def __call__(self, spectrum: np.ndarray, noise_psd: np.ndarray) -> np.ndarray:
-        """Apply the filter to a complex spectrum.
-
-        Parameters
-        ----------
-        spectrum:
-            Complex spectrum of the current frame.
-        noise_psd:
-            Noise PSD estimate from IMCRA.
-
-        Returns
-        -------
-        np.ndarray
-            Enhanced complex spectrum. Phase is untouched -- only the magnitude
-            is modified, which is standard for this class of enhancement.
-        """
         power = np.abs(spectrum) ** 2
         return spectrum * self.compute_gain(power, noise_psd)
