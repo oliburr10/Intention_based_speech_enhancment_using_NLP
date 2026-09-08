@@ -1,12 +1,4 @@
-"""Natural-language side of the system.
-
-Pipeline::
-
-    complaint sentence
-        -> all-mpnet-base-v2 sentence embedding (768-dim, L2-normalised)
-        -> intent classifier  -> one of six classes
-        -> severity scorer    -> continuous score in [0, 1]
-
+"""
 The classifier and the severity scorer run in parallel on the *same* embedding,
 so a sentence is embedded once per query.
 """
