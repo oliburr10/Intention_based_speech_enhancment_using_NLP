@@ -14,7 +14,7 @@ The system has three parts:
     regressor, both operating on ``all-mpnet-base-v2`` embeddings.
 
 ``intent_se.control``
-    The bridge: maps (intent, severity) onto DSP parameter updates.
+    The bridge: maps (intent, severity) onto DSP parameter updates - only experimental (not figured out only testing - outside of thesis!!)
 """
 
 __version__ = "1.0.0"
