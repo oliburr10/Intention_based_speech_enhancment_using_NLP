@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -38,7 +39,7 @@ class SeverityScorer:
     # ------------------------------------------------------------------
 
     def select_alpha(self, x: np.ndarray, y: np.ndarray) -> AlphaSearchResult:
-       
+
         """Choose the regularisation strength by k-fold CV on MAE.
         """
         cv = KFold(n_splits=self.cfg.cv_folds, shuffle=True, random_state=self.cfg.random_state)

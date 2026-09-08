@@ -61,9 +61,46 @@ intent-se-train --output-dir artifacts
 **2. Run the system on your soundcard.**
 
 ```bash
-intent-se-run --list-devices     # find your interface
-intent-se-run --device 3
+intent-se-run --list-devices          # print every device with its index
+intent-se-run --device 3              # same interface for mic and headset
 ```
+
+If the hearing aid microphone and the headset are on different interfaces,
+name them separately:
+
+```bash
+intent-se-run --input-device 3 --output-device 5
+```
+
+Either argument takes an **index** (`3`) or a **name substring**
+(`'Fireface'`). On startup the resolved devices are printed, so the routing
+that produced a given session is visible in the log:
+
+```
+Audio devices:
+  input : [3] Fireface UC (24 in / 24 out, default 48000 Hz)
+  output: [5] Headphones (0 in / 2 out, default 48000 Hz)
+```
+
+### Hardware setup
+
+The system was developed against an **RME Fireface UC at 48 kHz**, which
+delivers 512 samples per callback — the constraint every other frame size
+follows from. `--blocksize` accepts other values; the analysis window and FFT
+size scale with it to preserve the 50% overlap.
+
+> **Record your own device indices here.** They are assigned by the operating
+> system and change when interfaces are plugged in or removed, so run
+> `--list-devices` and note what the mic and the headset came back as:
+>
+> | Role | Device | Index | Channels used |
+> |---|---|---|---|
+> | Hearing aid microphone | _e.g. Fireface UC_ | _?_ | _?_ |
+> | Headset | | | |
+
+Only the first two input and first two output channels of the selected device
+are used. On a multichannel interface, route the microphone and headset to the
+first pair in the device's own mixer (TotalMix on the Fireface).
 
 Audio streams continuously while you type complaints. Each sentence is embedded,
 classified, scored for severity, and turned into a DSP parameter update that

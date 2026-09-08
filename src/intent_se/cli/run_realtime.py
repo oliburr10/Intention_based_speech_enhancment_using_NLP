@@ -30,8 +30,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--models", type=Path, default=Path("artifacts/models"),
                         help="Directory holding the trained .joblib models.")
-    parser.add_argument("--device", default=None,
-                        help="Soundcard device index or name.")
+    parser.add_argument("--device", type=_device, default=None,
+                        help="Soundcard for BOTH input and output: an index "
+                             "(e.g. 3) or a name substring (e.g. 'Fireface').")
+    parser.add_argument("--input-device", type=_device, default=None,
+                        help="Input device (the hearing aid microphone), if it "
+                             "differs from --device.")
+    parser.add_argument("--output-device", type=_device, default=None,
+                        help="Output device (the headset), if it differs from "
+                             "--device.")
     parser.add_argument("--samplerate", type=int, default=48_000)
     parser.add_argument("--blocksize", type=int, default=512)
     parser.add_argument("--dry-run", action="store_true",
@@ -39,6 +46,54 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--list-devices", action="store_true",
                         help="List audio devices and exit.")
     return parser
+
+
+def _device(value: str) -> int | str:
+    """Parse a device argument.
+
+    sounddevice reads an ``int`` as a device index but a ``str`` as a
+    case-insensitive substring match on the device *name*. Without this,
+    argparse hands over ``"3"`` and sounddevice hunts for a device with "3" in
+    its name instead of selecting index 3.
+    """
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _resolve(args) -> int | str | tuple[int | str, int | str] | None:  # noqa: ANN001
+    """Combine the device arguments into what ``sd.Stream`` expects.
+
+    Returns a single device when input and output are the same, a
+    ``(input, output)`` tuple when they differ, or ``None`` for the system
+    default.
+    """
+    inp = args.input_device if args.input_device is not None else args.device
+    out = args.output_device if args.output_device is not None else args.device
+    if inp is None and out is None:
+        return None
+    if inp == out:
+        return inp
+    return (inp, out)
+
+
+def describe_devices(device) -> None:  # noqa: ANN001
+    """Print the devices actually selected, so the routing is on the record."""
+    try:
+        import sounddevice as sd
+    except ImportError:
+        return
+    pair = device if isinstance(device, tuple) else (device, device)
+    for role, dev in zip(("input ", "output"), pair, strict=True):
+        try:
+            info = sd.query_devices(dev, "input" if role.strip() == "input" else "output")
+            print(f"  {role}: [{info['index']}] {info['name']}  "
+                  f"({info['max_input_channels']} in / "
+                  f"{info['max_output_channels']} out, "
+                  f"default {info['default_samplerate']:.0f} Hz)")
+        except Exception as exc:
+            print(f"  {role}: could not query {dev!r} -- {exc}")
 
 
 def list_devices() -> int:
@@ -75,17 +130,29 @@ def main(argv: list[str] | None = None) -> int:
     probe = ParameterProbe()
 
     #Audio
+    # The window is two blocks long: that is what gives the 50% overlap WOLA
+    # needs. Deriving it here means --blocksize works for any value, instead of
+    # only for its default.
     enhancer = SpeechEnhancer(
-        AudioConfig(sample_rate=args.samplerate, block_size=args.blocksize,
-                    hop_length=args.blocksize)
+        AudioConfig(
+            sample_rate=args.samplerate,
+            block_size=args.blocksize,
+            hop_length=args.blocksize,
+            win_length=args.blocksize * 2,
+            n_fft=args.blocksize * 4,
+        )
     )
     print(f"WOLA self-test: max deviation {enhancer.self_test():.2e}")
 
+    device = _resolve(args)
+
     stream_thread = None
     if not args.dry_run:
+        print("Audio devices:")
+        describe_devices(device)
         stream_thread = threading.Thread(
             target=enhancer.run_stream,
-            kwargs={"device": args.device},
+            kwargs={"device": device},
             daemon=True,
         )
         stream_thread.start()
