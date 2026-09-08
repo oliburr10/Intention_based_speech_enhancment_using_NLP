@@ -53,7 +53,13 @@ from dataclasses import dataclass, field
 
 from intent_se.config import NEUTRAL_CLASS, WienerConfig
 
-__all__ = ["INTENT_ACTIONS", "IntentAction", "ParameterController", "ParameterUpdate"]
+__all__ = [
+    "INTENT_ACTIONS",
+    "PARAM_LIMITS",
+    "IntentAction",
+    "ParameterController",
+    "ParameterUpdate",
+]
 
 
 @dataclass(frozen=True)
@@ -97,6 +103,21 @@ INTENT_ACTIONS: dict[str, IntentAction] = {
     "TOO_LOUD": IntentAction(parameter="output_gain", direction=-1, max_delta=0.5),
     "TOO_QUIET": IntentAction(parameter="output_gain", direction=+1, max_delta=1.0),
     "TOO_SHARP": IntentAction(parameter="tilt", direction=-1, max_delta=8.0),
+}
+
+#: Valid range for each parameter. These MUST match the clamps applied inside
+#: :class:`~intent_se.audio.wiener.ParametricWienerFilter.set_parameters`.
+#:
+#: The filter clamps whatever it is handed, so the audio path is safe either
+#: way. Clamping here as well keeps the controller's *reported* state equal to
+#: what the DSP actually applies -- otherwise a run of complaints in one
+#: direction walks a parameter past its limit and the controller reports a
+#: value (a negative gain floor, say) that the filter never used.
+PARAM_LIMITS: dict[str, tuple[float, float]] = {
+    "beta": (0.1, 4.0),
+    "gain_floor": (0.0, 1.0),
+    "output_gain": (0.1, 4.0),
+    "tilt": (-12.0, 12.0),
 }
 
 
@@ -240,8 +261,14 @@ class ParameterController:
         return record(True)
 
     def _nudge(self, parameter: str, direction: int, max_delta: float, severity: float) -> None:
-        """Move one parameter by ``direction * max_delta * severity``."""
-        self.parameters[parameter] = self.parameters[parameter] + direction * max_delta * severity
+        """Move one parameter by ``direction * max_delta * severity``, then clamp.
+
+        Adjustments are cumulative, so repeated complaints in the same direction
+        would otherwise walk a parameter out of its valid range.
+        """
+        value = self.parameters[parameter] + direction * max_delta * severity
+        low, high = PARAM_LIMITS[parameter]
+        self.parameters[parameter] = float(min(max(value, low), high))
 
     # ------------------------------------------------------------------
 

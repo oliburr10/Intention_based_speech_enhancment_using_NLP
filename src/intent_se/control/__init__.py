@@ -2,6 +2,7 @@
 
 from intent_se.control.mapping import (
     INTENT_ACTIONS,
+    PARAM_LIMITS,
     IntentAction,
     ParameterController,
     ParameterUpdate,
@@ -9,6 +10,7 @@ from intent_se.control.mapping import (
 
 __all__ = [
     "INTENT_ACTIONS",
+    "PARAM_LIMITS",
     "IntentAction",
     "ParameterController",
     "ParameterUpdate",

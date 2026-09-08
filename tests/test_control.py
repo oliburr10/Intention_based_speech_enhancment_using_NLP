@@ -146,3 +146,48 @@ def test_bound_parameters_are_clamped_by_the_filter():
     ctrl.bind(enh)
 
     assert 0.1 <= enh.parameters["beta"] <= 4.0
+
+
+def test_parameters_stay_within_limits_under_repeated_complaints():
+    """Cumulative nudges must not walk a parameter outside its valid range.
+
+    Regression test: 40 TOO_NOISY complaints used to drive gain_floor negative,
+    so the controller reported a floor the filter had silently clamped away.
+    """
+    from intent_se.control.mapping import PARAM_LIMITS
+
+    ctrl = ParameterController()
+    for _ in range(40):
+        ctrl.apply("TOO_NOISY", severity=1.0, confidence=0.9)
+    for _ in range(40):
+        ctrl.apply("TOO_QUIET", severity=1.0, confidence=0.9)
+    for _ in range(40):
+        ctrl.apply("TOO_SHARP", severity=1.0, confidence=0.9)
+
+    for name, (low, high) in PARAM_LIMITS.items():
+        assert low <= ctrl.parameters[name] <= high, (
+            f"{name} = {ctrl.parameters[name]} escaped [{low}, {high}]"
+        )
+
+
+def test_gain_floor_never_goes_negative():
+    ctrl = ParameterController()
+    for _ in range(25):
+        ctrl.apply("TOO_NOISY", severity=1.0, confidence=0.9)
+    assert ctrl.parameters["gain_floor"] >= 0.0
+
+
+def test_controller_state_matches_what_the_filter_applies():
+    """The controller's reported parameters must equal the enhancer's."""
+    from intent_se.audio.pipeline import SpeechEnhancer
+
+    enh = SpeechEnhancer()
+    ctrl = ParameterController()
+    for _ in range(30):
+        ctrl.apply("TOO_NOISY", severity=0.9, confidence=0.9)
+    ctrl.bind(enh)
+
+    for name, value in ctrl.parameters.items():
+        assert enh.parameters[name] == pytest.approx(value), (
+            f"{name}: controller says {value}, filter has {enh.parameters[name]}"
+        )
