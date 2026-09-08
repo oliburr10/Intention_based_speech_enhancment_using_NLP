@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import numpy as np
+
 from intent_se.config import WienerConfig
 
 __all__ = ["ParametricWienerFilter"]
@@ -38,7 +40,7 @@ class ParametricWienerFilter:
         # Normalised bin frequencies in [0, 1], used by the tilt shelf.
         self._norm_freq = np.linspace(0.0, 1.0, n_bins)
 
-    
+
     # Parameter control (this is the NLP -> DSP entry point)
     def set_parameters(
         self,

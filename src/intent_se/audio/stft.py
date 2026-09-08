@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import numpy as np
+
 from intent_se.config import AudioConfig
 
 __all__ = ["SlidingSTFT", "sqrt_hann", "wola_check"]
 
 
 def sqrt_hann(win_length: int) -> np.ndarray:
-        n = np.arange(win_length)
+    n = np.arange(win_length)
     hann = 0.5 - 0.5 * np.cos(2.0 * np.pi * n / win_length)
     return np.sqrt(hann)
 

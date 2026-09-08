@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     split = split_dataset(df, cfg)
     print(split.summary().to_string(), "\n")
 
-    # 2. Embeddings 
+    # 2. Embeddings
     embedder = SentenceEmbedder(cfg, cache_dir=args.cache_dir)
     print(f"Embedding with {cfg.embedding_model} ...")
 
