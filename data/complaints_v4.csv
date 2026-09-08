@@ -1,0 +1,1107 @@
+sentence,label,severity
+There is too much background noise,TOO_NOISY,0.55
+I can hear a lot of ambient noise around me,TOO_NOISY,0.5
+The room noise is overwhelming,TOO_NOISY,0.8
+There is a constant hissing interference,TOO_NOISY,0.6
+The background sounds are distracting,TOO_NOISY,0.55
+There is way too much environmental noise,TOO_NOISY,0.7
+I keep hearing rumbling in the background,TOO_NOISY,0.6
+The background noise is really bothering me,TOO_NOISY,0.75
+I cannot concentrate because of the ambient noise,TOO_NOISY,0.7
+There is a lot of static interference,TOO_NOISY,0.65
+The background noise level is unbearable,TOO_NOISY,0.95
+There is too much wind and traffic noise,TOO_NOISY,0.6
+My environment sounds chaotic and noisy,TOO_NOISY,0.75
+I hear a buzzing background hum that will not stop,TOO_NOISY,0.65
+The fan and traffic interference is incredibly annoying,TOO_NOISY,0.7
+The noise floor is too high,TOO_NOISY,0.65
+There is background hiss and hum all around me,TOO_NOISY,0.6
+The ambient interference is getting uncomfortable,TOO_NOISY,0.8
+Please reduce the background noise,TOO_NOISY,0.6
+There is just a tiny bit of background hiss,TOO_NOISY,0.15
+I notice some faint ambient sounds,TOO_NOISY,0.2
+There is slight background interference,TOO_NOISY,0.25
+A faint hissing background noise,TOO_NOISY,0.2
+The surrounding noise is distracting,TOO_NOISY,0.55
+Too much environmental background interference,TOO_NOISY,0.7
+I think I can detect a very faint background hiss,TOO_NOISY,0.05
+There might be a barely noticeable background hum,TOO_NOISY,0.08
+A whisper of background noise perhaps,TOO_NOISY,0.1
+The background noise today is absolutely excruciating,TOO_NOISY,1.0
+The background roar makes it impossible to think,TOO_NOISY,0.85
+A non-stop scraping background sound is driving me mad,TOO_NOISY,0.9
+The background environment has a heavy roaring drone,TOO_NOISY,0.75
+I hear low-frequency thumping patterns underneath,TOO_NOISY,0.55
+The surrounding clatter is intensely disruptive,TOO_NOISY,0.8
+A sharp high-pitched whine cuts through the audio,TOO_NOISY,0.85
+The ambient din completely masks everything else,TOO_NOISY,0.9
+I notice an intermittent static crackle over here,TOO_NOISY,0.45
+The underlying room tone is incredibly muddy,TOO_NOISY,0.5
+A persistent electrical hum dominates the space,TOO_NOISY,0.65
+The dynamic background racket keeps breaking focus,TOO_NOISY,0.7
+There is an annoying mechanical rattling loop nearby,TOO_NOISY,0.6
+The baseline acoustic environment is very dirty,TOO_NOISY,0.55
+A sudden wave of static rushes over the channel,TOO_NOISY,0.7
+The background environment is filled with feedback,TOO_NOISY,0.8
+This non-stop ambient rushing sound is pure torture,TOO_NOISY,0.95
+There is a very soft rustling sound in the back,TOO_NOISY,0.12
+I can spot a minor line-frequency buzz if I try,TOO_NOISY,0.18
+An ultra-faint high frequency whistling artifact,TOO_NOISY,0.1
+The signal is buried under intense white noise,TOO_NOISY,0.9
+A grinding ambient noise is making my ears hurt,TOO_NOISY,0.85
+The background texture is filled with heavy hash,TOO_NOISY,0.65
+I hear a cyclic thudding sound in the far background,TOO_NOISY,0.4
+The continuous clatter is utterly deafening,TOO_NOISY,0.95
+A steady annoying rushing air sound fills the room,TOO_NOISY,0.5
+The signal path has severe environmental leakage,TOO_NOISY,0.65
+I am struggling with constant background distortion,TOO_NOISY,0.75
+The surrounding racket is genuinely intolerable,TOO_NOISY,0.9
+A minor clicking artifact pops up occasionally,TOO_NOISY,0.22
+There is an underlying breeze sound behind the audio,TOO_NOISY,0.35
+The environment sounds like an engine room,TOO_NOISY,0.8
+A deep acoustic rumble is clouding the low frequencies,TOO_NOISY,0.55
+The channel is flooded with harsh ambient friction,TOO_NOISY,0.75
+I can perceive a microscopic trace of line hum,TOO_NOISY,0.04
+The environmental chaos is absolutely overwhelming,TOO_NOISY,0.9
+A dense wall of chatter is masking the main track,TOO_NOISY,0.7
+The ongoing background noise is extremely severe,TOO_NOISY,0.85
+There is a subtle breathing noise on the line,TOO_NOISY,0.2
+The persistent ambient static is fiercely irritating,TOO_NOISY,0.75
+A massive clanging noise is occurring in the back,TOO_NOISY,0.8
+The environmental background level is highly excessive,TOO_NOISY,0.65
+An intense low-end drone is vibrating the signal,TOO_NOISY,0.7
+I hear minor operational machine noise in the back,TOO_NOISY,0.3
+The background hiss is moderately intrusive here,TOO_NOISY,0.45
+A devastating amount of background crackle exists,TOO_NOISY,0.95
+The surrounding ambient hash is quite distracting,TOO_NOISY,0.5
+There is a slight wind interference on this channel,TOO_NOISY,0.3
+The ongoing background hubbub is making me crazy,TOO_NOISY,0.85
+A trace amount of background rumble is noticeable,TOO_NOISY,0.15
+The background atmosphere is incredibly loud and busy,TOO_NOISY,0.8
+I hear a constant screeching interference loop,TOO_NOISY,0.9
+There is an annoying small whine in the background,TOO_NOISY,0.35
+The background noise is completely choking the audio,TOO_NOISY,0.85
+A light background static is currently tracking,TOO_NOISY,0.25
+The room suffers from extreme background rumble,TOO_NOISY,0.75
+An agonizing background racket is blasting non-stop,TOO_NOISY,1.0
+There is too much ambient texture bleeding through,TOO_NOISY,0.5
+The background is full of chaotic transient pops,TOO_NOISY,0.65
+I hear a persistent ticking noise in the space,TOO_NOISY,0.4
+The ambient noise floor is noticeably high,TOO_NOISY,0.55
+A severe rushing wind sound dominates the environment,TOO_NOISY,0.8
+There is an irritating low-pitched hum occurring,TOO_NOISY,0.5
+The background sounds are moderately overwhelming,TOO_NOISY,0.6
+I am noticing severe environmental noise bleed,TOO_NOISY,0.75
+A marginal background hiss is tracking on the line,TOO_NOISY,0.18
+The background atmosphere is intensely noisy today,TOO_NOISY,0.8
+An explosive burst of background static just hit,TOO_NOISY,0.85
+The underlying environmental interference is constant,TOO_NOISY,0.6
+There is an unbearable amount of room rumble here,TOO_NOISY,0.9
+A tiny hint of wind noise is floating around,TOO_NOISY,0.1
+The ambient interference level is moderately high,TOO_NOISY,0.55
+I hear a continuous mechanical grinding in the back,TOO_NOISY,0.7
+The background noise is incredibly fierce right now,TOO_NOISY,0.85
+There is a slight hum but it is barely there,TOO_NOISY,0.12
+The room reflection and ambient din is staggering,TOO_NOISY,0.75
+A massive wall of background sound blocks the track,TOO_NOISY,0.9
+The environmental static is wildly distracting to me,TOO_NOISY,0.7
+I perceive an annoying rhythmic background pounding,TOO_NOISY,0.6
+The background noise floor is thoroughly unpleasant,TOO_NOISY,0.65
+There is a faint electrical buzz tracking continuously,TOO_NOISY,0.22
+The noise environment is absolutely disastrous,TOO_NOISY,0.95
+A persistent background rushing sound is very annoying,TOO_NOISY,0.55
+The underlying room noise is highly disruptive,TOO_NOISY,0.7
+I can hear an intrusive high-frequency hiss loop,TOO_NOISY,0.65
+There is too much acoustic clutter in this room,TOO_NOISY,0.5
+The ambient background noise is painfully intense,TOO_NOISY,0.9
+A marginal trace of environmental rumble is present,TOO_NOISY,0.14
+The ongoing room chatter is completely overwhelming,TOO_NOISY,0.75
+I hear a very minor scratching background artifact,TOO_NOISY,0.2
+The surrounding environmental noise is purely brutal,TOO_NOISY,0.95
+There is an annoying mechanical hum tracking behind,TOO_NOISY,0.45
+The background noise profile is deeply problematic,TOO_NOISY,0.65
+A continuous line hum is completely masking detail,TOO_NOISY,0.7
+I notice a moderate amount of background static,TOO_NOISY,0.4
+The surrounding acoustic environment is a total mess,TOO_NOISY,0.85
+There is a tiny microscopic whisper of background hiss,TOO_NOISY,0.04
+The severe background noise is killing my focus,TOO_NOISY,0.8
+A loud piercing hiss is constantly running behind,TOO_NOISY,0.75
+The underlying ambient racket is highly uncomfortable,TOO_NOISY,0.7
+I hear a faint distant rumbling in the background,TOO_NOISY,0.25
+The background noise level is completely out of hand,TOO_NOISY,0.9
+There is a moderate drone tracking in the background,TOO_NOISY,0.45
+The ambient atmosphere is intensely distracting here,TOO_NOISY,0.65
+A steady stream of background static is very clear,TOO_NOISY,0.5
+The surrounding noise is completely overpowering me,TOO_NOISY,0.8
+I hear an intermittent thumping noise on the line,TOO_NOISY,0.35
+There is too much environmental clutter on this channel,TOO_NOISY,0.6
+The background clatter is unbelievably agonizing,TOO_NOISY,0.95
+A minimal touch of room hiss is audible right now,TOO_NOISY,0.16
+The continuous background roar is highly distressing,TOO_NOISY,0.85
+I am noticing an annoying clicking noise behind me,TOO_NOISY,0.3
+The room noise floor is quite severe at the moment,TOO_NOISY,0.7
+There is a devastating level of ambient interference,TOO_NOISY,0.95
+A light atmospheric buzz is tracking on the channel,TOO_NOISY,0.2
+The background rumble is making it hard to follow,TOO_NOISY,0.6
+I perceive a constant high-frequency static blanket,TOO_NOISY,0.7
+The environmental background noise is purely excessive,TOO_NOISY,0.75
+There is an underlying machine drone that will not stop,TOO_NOISY,0.55
+The severe ambient din is utterly unmanageable,TOO_NOISY,0.9
+A subtle trace of environmental hiss can be heard,TOO_NOISY,0.12
+The background noise is incredibly loud and annoying,TOO_NOISY,0.8
+I hear a constant scratching interference in back,TOO_NOISY,0.65
+The environmental noise floor is extremely disruptive,TOO_NOISY,0.75
+There is too much background hash on this line,TOO_NOISY,0.55
+The surrounding racket is genuinely painful to hear,TOO_NOISY,1.0
+A moderate line-frequency buzz is tracking constantly,TOO_NOISY,0.4
+The background roar is completely overwhelming the signal,TOO_NOISY,0.85
+I can hear a faint mechanical clicking background sound,TOO_NOISY,0.22
+There is an intense wall of ambient static around,TOO_NOISY,0.8
+The baseline background noise is highly uncomfortable,TOO_NOISY,0.65
+A continuous heavy rumble is choking out everything,TOO_NOISY,0.8
+The environment sounds deeply chaotic and full of noise,TOO_NOISY,0.75
+I think there is a slight background buzz tracking,TOO_NOISY,0.18
+The ambient interference is completely out of control,TOO_NOISY,0.9
+There is a persistent background clatter occurring,TOO_NOISY,0.55
+The background hiss is intensely distracting right now,TOO_NOISY,0.7
+A micro amount of room rumble can be detected,TOO_NOISY,0.08
+The background environment is intensely noisy and loud,TOO_NOISY,0.85
+I hear an irritating continuous rushing wind sound,TOO_NOISY,0.6
+There is too much underlying static interference here,TOO_NOISY,0.65
+The surrounding din is thoroughly unbearable to face,TOO_NOISY,0.95
+A low-level background drone is constantly tracking,TOO_NOISY,0.35
+The background noise profile is exceptionally heavy,TOO_NOISY,0.8
+I can spot a minor background hiss on the line,TOO_NOISY,0.25
+There is a heavy amount of environmental leakage here,TOO_NOISY,0.7
+The background racket is completely splitting my head,TOO_NOISY,0.9
+A faint background whistling loop is barely audible,TOO_NOISY,0.15
+The room noise is thoroughly disrupting the recording,TOO_NOISY,0.6
+There is an annoying mechanical rattle in the back,TOO_NOISY,0.4
+The ambient static level is exceptionally high now,TOO_NOISY,0.75
+I hear a constant deep rumble underneath the track,TOO_NOISY,0.5
+The background atmosphere is intensely chaotic today,TOO_NOISY,0.85
+There is a trace of background crackle on the line,TOO_NOISY,0.1
+The persistent ambient noise floor is highly annoying,TOO_NOISY,0.65
+A severe rushing sound is dominating the background,TOO_NOISY,0.75
+The room suffers from an intense ambient noise layer,TOO_NOISY,0.7
+I notice a constant low-pitched drone behind me,TOO_NOISY,0.45
+There is too much environmental clutter around the track,TOO_NOISY,0.55
+The background noise today is absolutely devastating,TOO_NOISY,1.0
+A light room hiss is tracking but it is small,TOO_NOISY,0.2
+The surrounding racket is completely masking everything,TOO_NOISY,0.85
+I hear an intermittent cracking sound in the back,TOO_NOISY,0.3
+There is an underlying layer of heavy static hum,TOO_NOISY,0.6
+The ambient interference level is thoroughly painful,TOO_NOISY,0.95
+A subtle trace of room rumble is barely noticeable,TOO_NOISY,0.06
+The continuous background roar is highly intrusive,TOO_NOISY,0.8
+I perceive an annoying continuous mechanical clicking,TOO_NOISY,0.5
+There is too much ambient background racket occurring,TOO_NOISY,0.65
+The background noise is incredibly severe and heavy,TOO_NOISY,0.85
+A faint electrical hum is tracking in the background,TOO_NOISY,0.25
+The underlying room tone is exceptionally noisy now,TOO_NOISY,0.7
+There is an intense wall of environmental noise here,TOO_NOISY,0.9
+I notice a constant high-frequency background hiss,TOO_NOISY,0.6
+The surrounding dynamic racket keeps breaking my focus,TOO_NOISY,0.75
+A severe amount of background static is running here,TOO_NOISY,0.8
+There is a minor trace of wind noise bleeding in,TOO_NOISY,0.14
+The baseline acoustic noise is thoroughly disruptive,TOO_NOISY,0.65
+An agonizing clattering sound is blasting continuously,TOO_NOISY,0.95
+I hear a constant deep machine drone behind everything,TOO_NOISY,0.55
+There is too much ambient hash floating around me,TOO_NOISY,0.5
+The background noise floor is entirely unmanageable,TOO_NOISY,0.85
+A faint background scratch loop can be heard clearly,TOO_NOISY,0.22
+The continuous environmental noise is purely intense,TOO_NOISY,0.75
+I am noticing a severe level of room rumble bleed,TOO_NOISY,0.8
+There is an annoying mechanical hum tracking continuously,TOO_NOISY,0.45
+The background noise floor is highly excessive here,TOO_NOISY,0.7
+A devastating amount of background crackle is tracking,TOO_NOISY,0.9
+The room atmosphere is intensely loud and full of noise,TOO_NOISY,0.8
+I hear a persistent ticking noise in the background,TOO_NOISY,0.35
+There is too much environmental leakage on the line,TOO_NOISY,0.6
+The surrounding ambient hash is thoroughly distracting,TOO_NOISY,0.55
+A continuous roaring drone is completely choking detail,TOO_NOISY,0.85
+There is a tiny hint of static but it is minor,TOO_NOISY,0.12
+The environmental chaos is absolutely agonizing to hear,TOO_NOISY,1.0
+I hear an intrusive low-frequency hum loop tracking,TOO_NOISY,0.5
+The underlying room noise is exceptionally disruptive,TOO_NOISY,0.75
+I cannot make out what people are saying,SPEECH_UNCLEAR,0.7
+Voices are muffled and hard to understand,SPEECH_UNCLEAR,0.65
+Words sound like they are underwater,SPEECH_UNCLEAR,0.75
+I keep asking people to repeat themselves,SPEECH_UNCLEAR,0.7
+Dialogue is unclear and muddy,SPEECH_UNCLEAR,0.65
+I can hear people talking but cannot follow the words,SPEECH_UNCLEAR,0.7
+The consonants in speech are hard to distinguish,SPEECH_UNCLEAR,0.6
+Everything sounds like mumbling,SPEECH_UNCLEAR,0.75
+I cannot follow the conversation at all,SPEECH_UNCLEAR,0.7
+Speech intelligibility is very poor,SPEECH_UNCLEAR,0.85
+Words are blurry and indistinct,SPEECH_UNCLEAR,0.7
+I miss half of what people say in conversation,SPEECH_UNCLEAR,0.75
+The voice sounds distorted and garbled,SPEECH_UNCLEAR,0.65
+High frequency consonants in speech are missing,SPEECH_UNCLEAR,0.6
+The speech is slightly muffled,SPEECH_UNCLEAR,0.3
+Sometimes I miss a word in conversation,SPEECH_UNCLEAR,0.25
+Speech could be a bit more intelligible,SPEECH_UNCLEAR,0.2
+I struggle to follow speech in noisy places,SPEECH_UNCLEAR,0.8
+The voice is completely unintelligible,SPEECH_UNCLEAR,0.95
+I cannot understand a single spoken word,SPEECH_UNCLEAR,1.0
+People sound far away even when standing close,SPEECH_UNCLEAR,0.65
+Dialogue sounds like it is behind a wall,SPEECH_UNCLEAR,0.7
+Can you make the voices clearer and more intelligible,SPEECH_UNCLEAR,0.6
+It is difficult to follow what is being said,SPEECH_UNCLEAR,0.65
+The speech articulation sounds very poor,SPEECH_UNCLEAR,0.7
+Every now and then I miss a syllable,SPEECH_UNCLEAR,0.05
+Occasionally a word seems slightly unclear,SPEECH_UNCLEAR,0.08
+Speech is almost completely intelligible,SPEECH_UNCLEAR,0.1
+Speech is completely and utterly incomprehensible,SPEECH_UNCLEAR,1.0
+The vocal track is intensely smeared and unreadable,SPEECH_UNCLEAR,0.85
+The words are running together into absolute mush,SPEECH_UNCLEAR,0.9
+I can hear vocalizations but no semantic definition,SPEECH_UNCLEAR,0.75
+The vocal clarity drops off completely on every suffix,SPEECH_UNCLEAR,0.55
+Speech sound tokens are overlapping and highly distorted,SPEECH_UNCLEAR,0.8
+The pronunciation is highly indistinct and hard to catch,SPEECH_UNCLEAR,0.65
+The speech signal is incredibly phasey and chopped up,SPEECH_UNCLEAR,0.8
+I notice a faint trailing echo blurring the speech,SPEECH_UNCLEAR,0.35
+The verbal delivery is entirely swallowed by the room,SPEECH_UNCLEAR,0.75
+Every plosive sound is completely obliterated here,SPEECH_UNCLEAR,0.6
+The dialogue sounds totally scrambled and disconnected,SPEECH_UNCLEAR,0.85
+I am getting zero comprehension from this verbal audio,SPEECH_UNCLEAR,0.95
+The talker sounds incredibly muffled like a distant echo,SPEECH_UNCLEAR,0.7
+Vowels are leaking into one another endlessly,SPEECH_UNCLEAR,0.65
+The high frequency speech definition is completely dead,SPEECH_UNCLEAR,0.75
+I can parse about ten percent of the dialogue stream,SPEECH_UNCLEAR,0.9
+The articulation is exceptionally weak and slurred,SPEECH_UNCLEAR,0.7
+Speech sounds are entirely washed out by reverberation,SPEECH_UNCLEAR,0.8
+I hear voice components but they are completely mangled,SPEECH_UNCLEAR,0.85
+The spoken sentences have a very strange robotic smear,SPEECH_UNCLEAR,0.6
+Every single word is utterly choked and unidentifiable,SPEECH_UNCLEAR,1.0
+The conversation sounds like a low-pass filtered hum,SPEECH_UNCLEAR,0.8
+A tiny bit of verbal definition is missing on transients,SPEECH_UNCLEAR,0.15
+The voice is slightly soft and lacking crisp contours,SPEECH_UNCLEAR,0.25
+I can almost track the speech but it requires straining,SPEECH_UNCLEAR,0.45
+The phonemes are thoroughly degraded along the pipeline,SPEECH_UNCLEAR,0.7
+Voices sound intensely woolly and completely lack edge,SPEECH_UNCLEAR,0.65
+The dialogue structure is completely dissolved into noise,SPEECH_UNCLEAR,0.85
+I am completely unable to decode these vocal sounds,SPEECH_UNCLEAR,0.9
+Speech intelligibility has dropped down to zero percent,SPEECH_UNCLEAR,1.0
+The speaker is totally unintelligible due to masking,SPEECH_UNCLEAR,0.8
+Words sound like they are processed through a bad filter,SPEECH_UNCLEAR,0.55
+The verbal clarity is marginally below what I need,SPEECH_UNCLEAR,0.2
+A mild blur affects the fast conversation exchanges,SPEECH_UNCLEAR,0.3
+The dialogue is entirely unreadable from start to finish,SPEECH_UNCLEAR,0.95
+Voices are highly distorted and bleeding together,SPEECH_UNCLEAR,0.75
+I cannot resolve the specific terms being spoken,SPEECH_UNCLEAR,0.65
+The narration track is incredibly thick and muddy,SPEECH_UNCLEAR,0.6
+Every syllable is completely buried under the acoustic mix,SPEECH_UNCLEAR,0.8
+The speaker sounds like they are whispering into a pillow,SPEECH_UNCLEAR,0.7
+I can barely resolve the outline of the conversation,SPEECH_UNCLEAR,0.55
+The speech signal is severely broken up and corrupted,SPEECH_UNCLEAR,0.85
+Vocal tracking is highly unstable and constantly drops,SPEECH_UNCLEAR,0.7
+The words are extremely fuzzy around the edges,SPEECH_UNCLEAR,0.5
+I am experiencing extreme difficulty parsing the sentences,SPEECH_UNCLEAR,0.75
+The entire speech band is heavily compromised and dark,SPEECH_UNCLEAR,0.65
+Speech sounds completely underwater and lacks all detail,SPEECH_UNCLEAR,0.8
+A minor loss of speech clarity occurs on fast words,SPEECH_UNCLEAR,0.18
+The conversation is completely unintelligible to my ears,SPEECH_UNCLEAR,0.9
+I hear muddled vocal tones but zero actual syntax,SPEECH_UNCLEAR,0.85
+The voice is extremely distorted and entirely mangled,SPEECH_UNCLEAR,0.95
+Speech sounds are totally smeared across time slots,SPEECH_UNCLEAR,0.7
+The articulation level is genuinely painful to decipher,SPEECH_UNCLEAR,0.85
+I notice a constant phonetic blurring in the audio track,SPEECH_UNCLEAR,0.4
+The words are running together into an aggregate mush,SPEECH_UNCLEAR,0.75
+Dialogue comprehension is entirely impossible right now,SPEECH_UNCLEAR,1.0
+The spoken text sounds completely masked and unreadable,SPEECH_UNCLEAR,0.8
+A moderate amount of speech blurring is tracking here,SPEECH_UNCLEAR,0.45
+The verbal track lacks all presence and definition,SPEECH_UNCLEAR,0.6
+Every phrase sounds completely smeared and hard to track,SPEECH_UNCLEAR,0.7
+The speaker sounds extremely far away and heavily muffled,SPEECH_UNCLEAR,0.75
+I can barely pull the vocal signal out of the blend,SPEECH_UNCLEAR,0.55
+The conversation sounds completely chaotic and garbled,SPEECH_UNCLEAR,0.8
+Speech intelligibility is severely degraded on this track,SPEECH_UNCLEAR,0.85
+A slight lack of vocal crispness is apparent here,SPEECH_UNCLEAR,0.15
+The words are thoroughly washed out by room reflection,SPEECH_UNCLEAR,0.65
+I hear voices but they sound entirely like gibberish,SPEECH_UNCLEAR,0.9
+The dialogue is totally incomprehensible due to blurring,SPEECH_UNCLEAR,0.95
+Every consonant is completely dropped from the speech,SPEECH_UNCLEAR,0.8
+The talker is completely unintelligible from this distance,SPEECH_UNCLEAR,0.75
+I am struggling intensely to follow the simple sentences,SPEECH_UNCLEAR,0.7
+The speech band sounds heavily filtered and unnatural,SPEECH_UNCLEAR,0.5
+A microscopic blur is tracking on some vocal tracks,SPEECH_UNCLEAR,0.06
+The conversation is completely and utterly unreadable,SPEECH_UNCLEAR,1.0
+Voices are highly muffled like they are inside a box,SPEECH_UNCLEAR,0.7
+The speech structure is completely dissolved into mush,SPEECH_UNCLEAR,0.85
+I notice severe phonetic degradation on this recording,SPEECH_UNCLEAR,0.75
+The voice lacks all high-frequency clarity and crispness,SPEECH_UNCLEAR,0.6
+Dialogue sounds completely garbled and out of phase,SPEECH_UNCLEAR,0.8
+I cannot make out a single word from the presenter,SPEECH_UNCLEAR,0.9
+The words are extremely fuzzy and bleed into each other,SPEECH_UNCLEAR,0.65
+Speech is completely underwater and thoroughly unreadable,SPEECH_UNCLEAR,0.85
+A moderate level of speech blurring affects the channel,SPEECH_UNCLEAR,0.4
+The dialogue track is intensely smeared and incomprehensible,SPEECH_UNCLEAR,0.9
+I hear voice modulations but zero phonetic syntax here,SPEECH_UNCLEAR,0.75
+The speaker is totally unintelligible due to corruption,SPEECH_UNCLEAR,0.95
+Every single phrase sounds completely muddy and broken,SPEECH_UNCLEAR,0.8
+The conversation is completely blocked by bad processing,SPEECH_UNCLEAR,0.7
+I am having an incredibly hard time tracking the speaker,SPEECH_UNCLEAR,0.65
+The entire speech signal sounds heavily masked and dull,SPEECH_UNCLEAR,0.55
+A mild blur affects the vocal clarity every few words,SPEECH_UNCLEAR,0.22
+The spoken words are entirely running together right now,SPEECH_UNCLEAR,0.8
+Dialogue intelligibility is completely and utterly broken,SPEECH_UNCLEAR,1.0
+Voices are highly distorted and completely unreadable,SPEECH_UNCLEAR,0.85
+I cannot resolve any specific details of the dialogue,SPEECH_UNCLEAR,0.7
+The narration track sounds completely thick and muffled,SPEECH_UNCLEAR,0.6
+Every word is completely washed out by the channel noise,SPEECH_UNCLEAR,0.75
+The speaker sounds like they are deep inside a tunnel,SPEECH_UNCLEAR,0.75
+I can barely track the fast parts of the conversation,SPEECH_UNCLEAR,0.5
+The speech path is severely broken and deeply corrupted,SPEECH_UNCLEAR,0.9
+Vocal clarity is highly unstable and thoroughly degraded,SPEECH_UNCLEAR,0.8
+The phrases are extremely blurry around the consonants,SPEECH_UNCLEAR,0.65
+I am experiencing severe issues parsing the vocal track,SPEECH_UNCLEAR,0.75
+The entire conversation sounds heavily filtered and dark,SPEECH_UNCLEAR,0.6
+Speech is completely underwater and lacks all definition,SPEECH_UNCLEAR,0.85
+A minor loss of dialogue clarity is present over here,SPEECH_UNCLEAR,0.14
+The voice track is completely unintelligible to our ears,SPEECH_UNCLEAR,0.9
+I hear muddled vocal signals but zero actual semantic meaning,SPEECH_UNCLEAR,0.8
+The speech is extremely distorted and thoroughly mangled,SPEECH_UNCLEAR,0.95
+Words sound completely smeared across the time slots,SPEECH_UNCLEAR,0.7
+The articulation level is genuinely impossible to decode,SPEECH_UNCLEAR,0.85
+I notice a constant phonetic smearing in this recording,SPEECH_UNCLEAR,0.45
+The phrases are running together into total absolute mush,SPEECH_UNCLEAR,0.8
+Dialogue comprehension is completely shut down right now,SPEECH_UNCLEAR,1.0
+The spoken sentences sound completely masked and dull,SPEECH_UNCLEAR,0.75
+A moderate amount of vocal blurring is tracking on line,SPEECH_UNCLEAR,0.5
+The verbal signal lacks all crisp presence and edge,SPEECH_UNCLEAR,0.65
+Every sentence sounds completely smeared and hard to parse,SPEECH_UNCLEAR,0.7
+The speaker sounds exceptionally far away and muffled,SPEECH_UNCLEAR,0.8
+I can barely pull the spoken signal out of the blend,SPEECH_UNCLEAR,0.55
+The conversation sounds completely chaotic and broken up,SPEECH_UNCLEAR,0.85
+Speech intelligibility is severely compromised right now,SPEECH_UNCLEAR,0.9
+A slight lack of phonetic crispness is tracking here,SPEECH_UNCLEAR,0.12
+The words are thoroughly washed out by heavy echo loops,SPEECH_UNCLEAR,0.7
+I hear voices but they sound entirely like random noise,SPEECH_UNCLEAR,0.85
+The dialogue is totally incomprehensible due to mushiness,SPEECH_UNCLEAR,0.95
+Every consonant is completely missing from the phrasing,SPEECH_UNCLEAR,0.75
+The talker is completely unintelligible from this room,SPEECH_UNCLEAR,0.8
+I am struggling intensely to follow these basic words,SPEECH_UNCLEAR,0.65
+The speech band sounds heavily low-passed and unnatural,SPEECH_UNCLEAR,0.55
+A microscopic blur is tracking on the main voice channel,SPEECH_UNCLEAR,0.05
+The conversation is completely and utterly uninterpretable,SPEECH_UNCLEAR,1.0
+Voices are highly muffled like they are behind plastic,SPEECH_UNCLEAR,0.65
+The speech structure is completely dissolved into echo,SPEECH_UNCLEAR,0.8
+I notice severe phonetic degradation across the channel,SPEECH_UNCLEAR,0.7
+The voice lacks all high-frequency presence and clarity,SPEECH_UNCLEAR,0.6
+I cannot make out a single word from the presentation,SPEECH_UNCLEAR,0.85
+The words are extremely fuzzy and bleed into silence,SPEECH_UNCLEAR,0.6
+Speech is completely underwater and thoroughly degraded,SPEECH_UNCLEAR,0.8
+A moderate level of speech blurring affects this track,SPEECH_UNCLEAR,0.45
+The dialogue track is intensely smeared and broken down,SPEECH_UNCLEAR,0.85
+The speaker is totally unintelligible due to compression,SPEECH_UNCLEAR,0.9
+Every single phrase sounds completely muddy and unreadable,SPEECH_UNCLEAR,0.75
+I am having an incredibly hard time tracking the lyrics,SPEECH_UNCLEAR,0.65
+The entire speech signal sounds heavily masked and dead,SPEECH_UNCLEAR,0.7
+A mild blur affects the vocal track clarity completely,SPEECH_UNCLEAR,0.35
+The spoken words are entirely running together over here,SPEECH_UNCLEAR,0.75
+Dialogue intelligibility is completely and utterly ruined,SPEECH_UNCLEAR,1.0
+Voices are highly distorted and completely washed out,SPEECH_UNCLEAR,0.8
+I cannot resolve any specific details of the conversation,SPEECH_UNCLEAR,0.65
+The narration track sounds completely thick and unreadable,SPEECH_UNCLEAR,0.55
+Every word is completely washed out by the channel hum,SPEECH_UNCLEAR,0.7
+The speaker sounds like they are inside an iron box,SPEECH_UNCLEAR,0.8
+I can barely track the fast portions of the dialogue,SPEECH_UNCLEAR,0.45
+The speech path is severely broken and thoroughly ruined,SPEECH_UNCLEAR,0.95
+Vocal clarity is highly unstable and thoroughly broken,SPEECH_UNCLEAR,0.85
+The phrases are extremely blurry around the word ends,SPEECH_UNCLEAR,0.6
+I am experiencing severe issues parsing the audio text,SPEECH_UNCLEAR,0.7
+The entire conversation sounds heavily filtered and thick,SPEECH_UNCLEAR,0.55
+A minor loss of dialogue clarity is tracking right here,SPEECH_UNCLEAR,0.12
+The voice track is completely unintelligible to the group,SPEECH_UNCLEAR,0.85
+I hear muddled vocal signals but zero actual syntax track,SPEECH_UNCLEAR,0.75
+The speech is extremely distorted and completely broken,SPEECH_UNCLEAR,0.9
+Words sound completely smeared across the audio blocks,SPEECH_UNCLEAR,0.65
+The articulation level is genuinely painful to follow now,SPEECH_UNCLEAR,0.8
+The volume is ever so slightly above comfortable,TOO_LOUD,0.04
+There is a barely noticeable excess in the output level,TOO_LOUD,0.06
+Just the tiniest bit too loud for me,TOO_LOUD,0.08
+The volume is just a whisker above ideal,TOO_LOUD,0.07
+A very subtle excess in output volume,TOO_LOUD,0.1
+The output is fractionally louder than I would like,TOO_LOUD,0.1
+Just slightly too much volume barely noticeable,TOO_LOUD,0.12
+The sound level is a tiny bit high for my taste,TOO_LOUD,0.15
+Barely noticeable but the volume is a hair too high,TOO_LOUD,0.08
+The volume is ever so slightly higher than ideal,TOO_LOUD,0.05
+Just the tiniest bit too much output volume,TOO_LOUD,0.08
+A microscopic increase in volume over my preference,TOO_LOUD,0.05
+The output level is almost perfect but just a touch high,TOO_LOUD,0.1
+It is a little bit too loud for me,TOO_LOUD,0.2
+Slightly too much volume overall,TOO_LOUD,0.22
+A small reduction in volume would help,TOO_LOUD,0.2
+The output is a bit louder than comfortable,TOO_LOUD,0.25
+Could you turn it down just a little please,TOO_LOUD,0.18
+The volume is mildly too high for this environment,TOO_LOUD,0.25
+A minor volume reduction would be appreciated,TOO_LOUD,0.2
+Slightly over my comfortable listening level,TOO_LOUD,0.22
+The gain level is a bit high,TOO_LOUD,0.28
+Just a touch too much amplification for me,TOO_LOUD,0.18
+The sound is somewhat louder than I prefer,TOO_LOUD,0.25
+Can you reduce the volume a little bit please,TOO_LOUD,0.2
+A small drop in output level would be nice,TOO_LOUD,0.22
+The volume needs to come down just slightly,TOO_LOUD,0.24
+Slightly too much output for comfortable listening,TOO_LOUD,0.26
+It is a little bit too loud in volume,TOO_LOUD,0.2
+Slightly too much output volume for me,TOO_LOUD,0.25
+Just a touch too much amplification,TOO_LOUD,0.15
+The output is a bit too strong for me right now,TOO_LOUD,0.3
+I would like the volume turned down just a notch,TOO_LOUD,0.28
+The sound level is mildly above what I need,TOO_LOUD,0.22
+The volume is noticeably too high for me,TOO_LOUD,0.45
+Please lower the volume a bit,TOO_LOUD,0.35
+The output level needs to come down,TOO_LOUD,0.4
+I need to reduce the output volume,TOO_LOUD,0.38
+The amplification is more than I need,TOO_LOUD,0.35
+Turn down the volume please,TOO_LOUD,0.42
+The sound is too loud for comfortable listening,TOO_LOUD,0.5
+Lower the output level please,TOO_LOUD,0.4
+The volume is louder than I want it,TOO_LOUD,0.45
+Can you reduce the amplification,TOO_LOUD,0.35
+The output is too strong for this quiet room,TOO_LOUD,0.5
+The gain is set a bit too high,TOO_LOUD,0.38
+I would like less volume please,TOO_LOUD,0.32
+The sound pressure is noticeably too much,TOO_LOUD,0.48
+Please bring the volume down a notch,TOO_LOUD,0.35
+The overall level is a bit much for me,TOO_LOUD,0.4
+Too much amplification for this situation,TOO_LOUD,0.44
+The volume is uncomfortably high right now,TOO_LOUD,0.52
+Reduce the output gain please,TOO_LOUD,0.36
+The sound level is pushing past comfortable,TOO_LOUD,0.5
+Please lower the volume,TOO_LOUD,0.4
+The overall volume is too high,TOO_LOUD,0.55
+The audio output is blasting,TOO_LOUD,0.6
+Even soft sounds are amplified too much,TOO_LOUD,0.5
+I need to reduce the output volume now,TOO_LOUD,0.48
+Lower the output volume please,TOO_LOUD,0.45
+Too much gain in the output,TOO_LOUD,0.55
+The amplifier output is too strong,TOO_LOUD,0.58
+Reduce the output gain significantly,TOO_LOUD,0.6
+The volume level is uncomfortable,TOO_LOUD,0.55
+The amplification is too aggressive,TOO_LOUD,0.58
+I feel overwhelmed by the output level,TOO_LOUD,0.6
+Turn down the output please,TOO_LOUD,0.5
+The sound is far too loud for me,TOO_LOUD,0.62
+Everything is amplified more than I need,TOO_LOUD,0.48
+The output volume is causing me strain,TOO_LOUD,0.55
+I need the volume reduced right away,TOO_LOUD,0.5
+The overall volume is much too high,TOO_LOUD,0.7
+The amplification level is way too high,TOO_LOUD,0.75
+The gain is set far too high,TOO_LOUD,0.78
+The output is overpowering and overwhelming,TOO_LOUD,0.72
+Please reduce the volume significantly,TOO_LOUD,0.68
+The volume is so loud I cannot think straight,TOO_LOUD,0.78
+The loudness is causing me significant discomfort,TOO_LOUD,0.8
+I cannot stand how loud the output is,TOO_LOUD,0.82
+The volume is far too intense and painful,TOO_LOUD,0.8
+My ears are hurting from the volume right now,TOO_LOUD,0.82
+The amplification is much too loud to tolerate,TOO_LOUD,0.78
+The output is far too loud and needs to come down now,TOO_LOUD,0.75
+The volume is making me want to remove my hearing aid,TOO_LOUD,0.8
+The gain is set dangerously high right now,TOO_LOUD,0.82
+Every sound is amplified to an uncomfortable degree,TOO_LOUD,0.7
+The output level is far beyond what I can handle,TOO_LOUD,0.8
+The sound is blasting painfully into my ears,TOO_LOUD,0.83
+The volume is causing real distress right now,TOO_LOUD,0.78
+The amplification is so high it is hurting me,TOO_LOUD,0.85
+Please turn the volume down urgently,TOO_LOUD,0.75
+The output is deafeningly loud right now,TOO_LOUD,0.85
+The sound level is dangerously high for my ears,TOO_LOUD,0.8
+I need to remove my hearing aid the volume is too high,TOO_LOUD,0.78
+The loudness is becoming unbearable right now,TOO_LOUD,0.83
+The volume is completely overwhelming my hearing,TOO_LOUD,0.8
+My ears are ringing from the excessive volume,TOO_LOUD,0.9
+The output volume is dangerously high right now,TOO_LOUD,0.92
+The amplification is so high it is damaging my hearing,TOO_LOUD,0.95
+The volume is completely unbearable right now,TOO_LOUD,0.9
+The volume is excruciatingly and unbearably loud,TOO_LOUD,1.0
+The output is so painfully loud I cannot function,TOO_LOUD,1.0
+The amplification is agonizingly deafening right now,TOO_LOUD,1.0
+The volume is absolutely destroying my ears,TOO_LOUD,1.0
+The amplification is extremely and unbearably high,TOO_LOUD,1.0
+The volume is painfully high,TOO_LOUD,1.0
+The output volume is excruciatingly and unbearably loud,TOO_LOUD,1.0
+The sound is blasting at a completely unbearable level,TOO_LOUD,0.95
+My ears are in pain from the excessive output volume,TOO_LOUD,0.92
+The volume is so extreme I cannot tolerate it at all,TOO_LOUD,0.95
+The sound level is excruciatingly painful right now,TOO_LOUD,0.95
+I cannot bear how loud the output is right now,TOO_LOUD,0.9
+The volume is making my ears ring intensely,TOO_LOUD,0.88
+The gain is so high it is causing me physical pain,TOO_LOUD,0.92
+The loudness is at an agonizing level right now,TOO_LOUD,0.95
+This is the most unbearably loud output I have experienced,TOO_LOUD,1.0
+I can barely detect any sound,TOO_QUIET,0.8
+The output volume is too low,TOO_QUIET,0.65
+Everything sounds very faint and distant,TOO_QUIET,0.7
+I need more output volume,TOO_QUIET,0.65
+People sound like they are whispering from far away,TOO_QUIET,0.7
+I can hardly detect any sounds at all,TOO_QUIET,0.85
+The audio output is too soft,TOO_QUIET,0.6
+Please boost the volume,TOO_QUIET,0.65
+I am straining to detect any sound,TOO_QUIET,0.75
+All sounds feel very faint and distant,TOO_QUIET,0.7
+The output level is insufficient,TOO_QUIET,0.65
+I miss sounds because they are too faint,TOO_QUIET,0.75
+Everything is muted and inaudible,TOO_QUIET,0.8
+Can you boost the output volume a little,TOO_QUIET,0.3
+It is just slightly too low in volume,TOO_QUIET,0.15
+I wish the output was a tiny bit louder,TOO_QUIET,0.2
+A small volume boost would be nice,TOO_QUIET,0.2
+I cannot detect the television audio at all,TOO_QUIET,0.9
+I hear absolutely nothing from the output,TOO_QUIET,1.0
+The sound is completely inaudible to me,TOO_QUIET,1.0
+Raise the output gain significantly,TOO_QUIET,0.75
+More output amplification is needed,TOO_QUIET,0.65
+I need the output to be much louder,TOO_QUIET,0.8
+I can only barely detect faint sounds,TOO_QUIET,0.85
+The amplification is not nearly enough,TOO_QUIET,0.7
+The volume is ever so slightly below ideal,TOO_QUIET,0.05
+Just the tiniest bit more volume would be perfect,TOO_QUIET,0.08
+Barely noticeable but the output is a hair too soft,TOO_QUIET,0.1
+I cannot detect even the faintest sound whatsoever,TOO_QUIET,1.0
+The output stream has dropped down to absolute zero sound,TOO_QUIET,1.0
+The signal is so faint it does not register at all,TOO_QUIET,0.95
+I am straining my ears to the limit and hearing nothing,TOO_QUIET,0.9
+The level is completely buried below human threshold,TOO_QUIET,0.85
+The amplification is completely dead on this channel,TOO_QUIET,0.8
+The sound is thoroughly muted and lacks any presence,TOO_QUIET,0.75
+A minor boost in master volume would help significantly,TOO_QUIET,0.22
+The current volume level is tracking a bit low for me,TOO_QUIET,0.25
+The volume setting is hovering just under usable ranges,TOO_QUIET,0.35
+Everything feels heavily dampened and thoroughly quiet,TOO_QUIET,0.6
+The speaker sounds like they are speaking miles away,TOO_QUIET,0.7
+The audio output has almost completely faded out here,TOO_QUIET,0.8
+Please crank up the master gain as much as possible,TOO_QUIET,0.7
+The sound pressure level is thoroughly inadequate now,TOO_QUIET,0.65
+A marginal increase in amplification would be wonderful,TOO_QUIET,0.12
+The gain scale is set way too low along the line,TOO_QUIET,0.55
+I can barely verify that the audio is actually playing,TOO_QUIET,0.75
+The signal is entirely swallowed by the low gain setting,TOO_QUIET,0.8
+This level of volume is completely useless for tracking,TOO_QUIET,0.85
+The sound is tracking at an exceptionally low tier today,TOO_QUIET,0.7
+I notice the audio level is a tiny bit soft over here,TOO_QUIET,0.18
+Please boost the output gain significantly right away,TOO_QUIET,0.75
+The channel is completely quiet and lacks all level,TOO_QUIET,0.8
+The acoustic presence is thoroughly faint and dead now,TOO_QUIET,0.75
+A small adjustment upward in volume would be ideal,TOO_QUIET,0.15
+The audio output is tracking at a microscopic level,TOO_QUIET,0.85
+I can hardly perceive any acoustic energy whatsoever,TOO_QUIET,0.9
+The speaker is completely drowned out due to low volume,TOO_QUIET,0.8
+The signal level is incredibly weak and hard to parse,TOO_QUIET,0.65
+Everything sounds entirely muted and heavily repressed,TOO_QUIET,0.7
+The volume is tracking at a completely inadequate setting,TOO_QUIET,0.75
+I am struggling intensely to catch any sound tokens,TOO_QUIET,0.8
+Please apply a heavy amount of gain to this track,TOO_QUIET,0.65
+The audio output is completely buried in the quiet zone,TOO_QUIET,0.85
+A very marginal lack of volume is tracking on line,TOO_QUIET,0.08
+The sound is tracking at an extremely faint threshold,TOO_QUIET,0.8
+I notice the gain level is completely bottomed out,TOO_QUIET,0.9
+The volume level is thoroughly insufficient for my work,TOO_QUIET,0.7
+Please step up the output amplification significantly,TOO_QUIET,0.75
+The acoustic path is completely quiet and empty here,TOO_QUIET,0.85
+A tiny boost in master gain would make this readable,TOO_QUIET,0.14
+The sound output is exceptionally soft and completely dead,TOO_QUIET,0.8
+I perceive a highly inadequate level of audio volume,TOO_QUIET,0.65
+The conversation sounds completely distant and faint today,TOO_QUIET,0.7
+Everything is tracking under the comfortable listening floor,TOO_QUIET,0.75
+I am straining heavily to parse any acoustic detail,TOO_QUIET,0.8
+Please scale up the master gain level immediately now,TOO_QUIET,0.7
+The volume level is completely and utterly non-existent,TOO_QUIET,1.0
+The signal is so soft it does not register at all,TOO_QUIET,0.95
+The amplification is completely dead on this entire channel,TOO_QUIET,0.8
+A minor boost in output gain would help significantly today,TOO_QUIET,0.22
+The speaker sounds like they are talking miles away from us,TOO_QUIET,0.7
+The sound pressure level is thoroughly inadequate right now,TOO_QUIET,0.65
+This level of volume is completely useless for conversation,TOO_QUIET,0.85
+Please boost the output level significantly right away now,TOO_QUIET,0.75
+The channel is completely silent and lacks all level now,TOO_QUIET,0.8
+A small adjustment upward in total gain would be ideal now,TOO_QUIET,0.15
+I can hardly perceive any acoustic tracking whatsoever now,TOO_QUIET,0.9
+Everything sounds entirely muted and heavily dampened,TOO_QUIET,0.7
+I am struggling intensely to catch any spoken sound tokens,TOO_QUIET,0.8
+The audio output is completely buried in the low gain zone,TOO_QUIET,0.85
+A very marginal lack of volume is tracking on this device,TOO_QUIET,0.08
+The sound is tracking at an extremely faint level,TOO_QUIET,0.8
+I notice the gain level is completely bottomed out today,TOO_QUIET,0.9
+Please step up the output volume factor significantly now,TOO_QUIET,0.75
+The acoustic path is completely quiet and empty over line,TOO_QUIET,0.85
+I perceive a highly inadequate scale of audio volume here,TOO_QUIET,0.65
+The conversation sounds completely distant and faint here,TOO_QUIET,0.7
+I am straining heavily to parse any verbal acoustic detail,TOO_QUIET,0.8
+Please scale up the master volume tier immediately now,TOO_QUIET,0.7
+The volume level is completely and utterly dead over line,TOO_QUIET,1.0
+There is perhaps a very faint trace of shrillness,TOO_SHARP,0.05
+Just the slightest hint of unwanted treble brightness,TOO_SHARP,0.08
+A barely perceptible tinny quality to the sound,TOO_SHARP,0.1
+I can detect a very faint edge to the high frequencies,TOO_SHARP,0.06
+There is a microscopic trace of shrillness if I listen,TOO_SHARP,0.04
+A very subtle brightness in the treble range,TOO_SHARP,0.1
+There is a barely noticeable tinny quality,TOO_SHARP,0.08
+Just a hint of unwanted brightness in the sound,TOO_SHARP,0.12
+A very slight shrill edge to high pitched sounds,TOO_SHARP,0.14
+The treble is a touch too bright if I listen carefully,TOO_SHARP,0.12
+It sounds a bit too shrill and tinny,TOO_SHARP,0.25
+Slightly too much treble brightness for my taste,TOO_SHARP,0.2
+Just a touch too shrill and sibilant,TOO_SHARP,0.2
+Audio has a slightly tinny shrill quality,TOO_SHARP,0.25
+The high treble end is a tad too bright,TOO_SHARP,0.2
+The sound has a mildly tinny character,TOO_SHARP,0.22
+There is a bit too much brightness in the upper range,TOO_SHARP,0.28
+Voices have a slightly metallic quality,TOO_SHARP,0.24
+The treble is a little too crisp and edgy,TOO_SHARP,0.26
+High frequency sounds are a bit too prominent,TOO_SHARP,0.3
+A minor attenuation of the treble would help,TOO_SHARP,0.22
+The treble balance is tracking slightly too bright,TOO_SHARP,0.25
+Sibilant sounds are a bit too prominent right now,TOO_SHARP,0.28
+The s sounds in speech feel slightly too sharp,TOO_SHARP,0.3
+There is a mild metallic edge to the voices,TOO_SHARP,0.26
+The high frequencies are a bit grating,TOO_SHARP,0.32
+A small reduction in treble would make this comfortable,TOO_SHARP,0.2
+The sound has a slightly edgy quality in the upper range,TOO_SHARP,0.28
+High pitched sounds are a touch too intense,TOO_SHARP,0.3
+There is mild shrillness on consonant sounds,TOO_SHARP,0.32
+Certain high frequency sounds feel prickly,TOO_SHARP,0.55
+The treble is too sharp and tinny,TOO_SHARP,0.65
+High frequency treble is too harsh,TOO_SHARP,0.7
+The treble is way too bright and shrill,TOO_SHARP,0.65
+The treble has a harsh metallic quality,TOO_SHARP,0.6
+Voices sound robotic with harsh sibilants,TOO_SHARP,0.62
+Everything is too bright and treble-heavy,TOO_SHARP,0.65
+Too much brightness and shrillness in the treble,TOO_SHARP,0.6
+Reduce the treble harshness please,TOO_SHARP,0.58
+Too much emphasis on shrill high treble frequencies,TOO_SHARP,0.62
+Sounds are edgy and shrill,TOO_SHARP,0.6
+The treble is noticeably too bright and harsh,TOO_SHARP,0.58
+High frequency sounds are grating and unpleasant,TOO_SHARP,0.6
+The s sounds in speech are really bothering me,TOO_SHARP,0.55
+Voices have a harsh metallic tone to them,TOO_SHARP,0.6
+The sound is quite shrill and difficult to listen to,TOO_SHARP,0.55
+There is too much treble and it sounds harsh,TOO_SHARP,0.62
+High pitched voices sound particularly shrill,TOO_SHARP,0.58
+The treble quality is far too bright for my liking,TOO_SHARP,0.55
+Sibilant consonants like s and t sounds are too harsh,TOO_SHARP,0.6
+The brightness of the treble is bothering me,TOO_SHARP,0.52
+Everything sounds uncomfortably shrill right now,TOO_SHARP,0.62
+The high frequency response is too aggressive,TOO_SHARP,0.58
+There is an unpleasant metallic edge to all the sounds,TOO_SHARP,0.6
+The treble is harsh and grating on my ears,TOO_SHARP,0.65
+High pitched treble frequencies really bother me,TOO_SHARP,0.75
+Everything sounds piercing and shrill,TOO_SHARP,0.8
+The treble quality is harsh and aggressive,TOO_SHARP,0.78
+The treble shrillness is giving me a headache,TOO_SHARP,0.82
+The sibilant s sounds in speech are shrill and painful,TOO_SHARP,0.78
+Treble frequencies are very piercing right now,TOO_SHARP,0.8
+It sounds shrill like nails on a chalkboard,TOO_SHARP,0.85
+The treble is intensely shrill and hard to tolerate,TOO_SHARP,0.8
+High frequency sounds are causing me discomfort,TOO_SHARP,0.75
+The shrillness in the treble is becoming painful,TOO_SHARP,0.78
+Every consonant has an intensely harsh edge to it,TOO_SHARP,0.8
+The brightness of the treble is genuinely painful,TOO_SHARP,0.82
+Sibilant sounds are cutting through very harshly,TOO_SHARP,0.78
+The sound is intensely shrill and very uncomfortable,TOO_SHARP,0.8
+The treble is far too harsh and is hurting my ears,TOO_SHARP,0.83
+High pitched sounds are unbearably shrill right now,TOO_SHARP,0.82
+The metallic shrill quality is very hard to bear,TOO_SHARP,0.78
+Every sharp consonant is piercing my ears right now,TOO_SHARP,0.8
+The treble brightness is causing serious discomfort,TOO_SHARP,0.78
+The shrill quality of the sound is making me wince,TOO_SHARP,0.82
+Cymbals and sibilant sounds are unbearable,TOO_SHARP,0.88
+The sibilant treble frequencies are extremely painful,TOO_SHARP,1.0
+The sibilant treble shrillness is absolutely agonising,TOO_SHARP,1.0
+The treble is so shrill it is causing me real pain,TOO_SHARP,0.92
+The piercing shrillness in the treble is unbearable,TOO_SHARP,0.95
+High frequency sounds are agonizingly painful right now,TOO_SHARP,0.95
+The shrillness is so intense I cannot tolerate it at all,TOO_SHARP,0.95
+Every high pitched sound feels like it is stabbing my ear,TOO_SHARP,0.92
+The harsh treble is causing me excruciating discomfort,TOO_SHARP,0.95
+The sibilants are so sharp and painful I cannot listen,TOO_SHARP,0.9
+The treble is excruciatingly shrill and completely painful,TOO_SHARP,1.0
+The harsh brightness is at an agonizing level,TOO_SHARP,0.95
+Every consonant sounds like a sharp spike through my ear,TOO_SHARP,0.9
+The shrillness is absolutely agonizing and unbearable,TOO_SHARP,1.0
+The treble harshness is causing me severe ear pain,TOO_SHARP,0.92
+This sounds great,BALANCED,0.0
+I am happy with how it sounds now,BALANCED,0.0
+The audio quality is excellent,BALANCED,0.0
+Everything sounds clear and well balanced,BALANCED,0.0
+I can hear speech perfectly,BALANCED,0.0
+This is exactly the right setting,BALANCED,0.0
+Much better now thank you,BALANCED,0.0
+The sound is very natural and comfortable,BALANCED,0.0
+I am comfortable with this setting,BALANCED,0.0
+Keep it just like this please,BALANCED,0.0
+Sounds fine and natural to me,BALANCED,0.0
+I like how this sounds,BALANCED,0.0
+The balance feels just right,BALANCED,0.0
+No complaints at all,BALANCED,0.0
+This is very comfortable,BALANCED,0.0
+Everything is working perfectly well,BALANCED,0.0
+Perfect volume and clarity,BALANCED,0.0
+The audio is well tuned and natural,BALANCED,0.0
+I can follow conversations without any effort,BALANCED,0.0
+Speech is perfectly intelligible and natural,BALANCED,0.0
+The noise reduction is working nicely,BALANCED,0.0
+Sounds are clear without being harsh or shrill,BALANCED,0.0
+I am completely satisfied with the current settings,BALANCED,0.0
+This is very good indeed,BALANCED,0.0
+I feel perfectly comfortable with what I am hearing,BALANCED,0.0
+This sounds much better now,BALANCED,0.0
+I can hear clearly again,BALANCED,0.0
+That is perfect thank you,BALANCED,0.0
+Yes this is exactly what I wanted,BALANCED,0.0
+Everything sounds natural now,BALANCED,0.0
+I am happy with this,BALANCED,0.0
+Yes that is much better,BALANCED,0.0
+That feels right now,BALANCED,0.0
+I can hear everything clearly,BALANCED,0.0
+This is comfortable now,BALANCED,0.0
+Sounds good to me,BALANCED,0.0
+Much better thank you,BALANCED,0.0
+I can follow the conversation now,BALANCED,0.0
+This setting is perfect for me,BALANCED,0.0
+I am satisfied now,BALANCED,0.0
+Yes this is right,BALANCED,0.0
+That sounds natural now,BALANCED,0.0
+I can hear everyone clearly now,BALANCED,0.0
+This is much more comfortable,BALANCED,0.0
+The sound feels natural and not too bright or too dull,BALANCED,0.0
+I can hear without any strain now,BALANCED,0.0
+Everything is clear and I have no complaints,BALANCED,0.0
+This works well for me,BALANCED,0.0
+I like how natural this sounds,BALANCED,0.0
+The sound is pleasant and clear,BALANCED,0.0
+I can hear voices clearly without any distortion,BALANCED,0.0
+This is comfortable and I can follow conversations easily,BALANCED,0.0
+Much better I can hear clearly now,BALANCED,0.0
+The sound is smooth and easy to listen to,BALANCED,0.0
+I have no issues with the sound right now,BALANCED,0.0
+This feels about right,BALANCED,0.0
+The setting seems good to me,BALANCED,0.0
+I can hear well and I am comfortable,BALANCED,0.0
+Everything sounds nice and clear,BALANCED,0.0
+This is working well,BALANCED,0.0
+I can follow speech easily now,BALANCED,0.0
+The sound is pleasant,BALANCED,0.0
+I am not struggling to hear anymore,BALANCED,0.0
+This sounds very natural and I like it,BALANCED,0.0
+I can hear everything without effort now,BALANCED,0.0
+That sounds right to me,BALANCED,0.0
+I am happy with the sound now,BALANCED,0.0
+This is exactly what I needed,BALANCED,0.0
+Everything is clear and I can follow what people say,BALANCED,0.0
+I feel good about this setting,BALANCED,0.0
+Sounds very comfortable now,BALANCED,0.0
+This is a comfortable level for me,BALANCED,0.0
+I can hear people speaking normally now,BALANCED,0.0
+The sound feels balanced and natural,BALANCED,0.0
+I can hear without any problem now,BALANCED,0.0
+This is the right level for me,BALANCED,0.0
+I am satisfied with the sound,BALANCED,0.0
+Everything sounds comfortable and clear,BALANCED,0.0
+The sound is clear without being harsh,BALANCED,0.0
+I can follow speech without straining,BALANCED,0.0
+This sounds just right,BALANCED,0.0
+I am happy with how clear everything sounds,BALANCED,0.0
+This is a good setting,BALANCED,0.0
+I can hear without any discomfort now,BALANCED,0.0
+The sound is very pleasant to listen to,BALANCED,0.0
+I can understand speech easily now,BALANCED,0.0
+This feels comfortable and natural,BALANCED,0.0
+Much better I have no complaints now,BALANCED,0.0
+The sound is clear and I am comfortable,BALANCED,0.0
+I can hear perfectly now thank you,BALANCED,0.0
+Yes this sounds much better,BALANCED,0.0
+I like this setting it sounds natural,BALANCED,0.0
+The sound is very comfortable now,BALANCED,0.0
+I am satisfied and can hear clearly,BALANCED,0.0
+This is perfect now,BALANCED,0.0
+Everything sounds fine now,BALANCED,0.0
+I can hear all the speech clearly,BALANCED,0.0
+The setting is comfortable for me,BALANCED,0.0
+I have no complaints about the sound,BALANCED,0.0
+This is working perfectly,BALANCED,0.0
+The sound is very clear and natural now,BALANCED,0.0
+I can follow people without asking them to repeat,BALANCED,0.0
+Everything sounds right to me,BALANCED,0.0
+I am comfortable and can hear well,BALANCED,0.0
+This is very clear and I like it,BALANCED,0.0
+The sound is good and I have no issues,BALANCED,0.0
+I can hear everything I need to hear,BALANCED,0.0
+This sounds natural and I am happy,BALANCED,0.0
+The setting feels right for this environment,BALANCED,0.0
+I can hear people speaking comfortably,BALANCED,0.0
+Sounds clear and comfortable to me,BALANCED,0.0
+I am satisfied with this,BALANCED,0.0
+This is a comfortable and clear sound,BALANCED,0.0
+I can hear without any difficulty now,BALANCED,0.0
+The sound quality is good now,BALANCED,0.0
+I feel good about what I am hearing,BALANCED,0.0
+This is a nice clear sound,BALANCED,0.0
+I can follow conversations with no trouble,BALANCED,0.0
+The sound is clear and not bothersome at all,BALANCED,0.0
+I am pleased with how this sounds,BALANCED,0.0
+This is comfortable for me thank you,BALANCED,0.0
+Everything sounds the way I want it to,BALANCED,0.0
+I can hear speech clearly without any harshness,BALANCED,0.0
+The sound feels just right for me,BALANCED,0.0
+I am happy and can hear clearly,BALANCED,0.0
+The output is slightly above my preferred level,TOO_LOUD,0.09
+Just a marginal excess in the volume right now,TOO_LOUD,0.06
+The volume is imperceptibly louder than ideal,TOO_LOUD,0.05
+I would prefer the volume a fraction lower,TOO_LOUD,0.18
+The output is a touch too strong for me,TOO_LOUD,0.22
+Could you bring the volume down slightly,TOO_LOUD,0.24
+The sound level is slightly above comfortable,TOO_LOUD,0.28
+A small reduction in output level would help me,TOO_LOUD,0.2
+The amplification is a bit more than I need,TOO_LOUD,0.26
+The volume is slightly louder than I like,TOO_LOUD,0.22
+I would like the output turned down a little,TOO_LOUD,0.2
+The sound is a shade too loud for my liking,TOO_LOUD,0.24
+Can you lower the output level slightly please,TOO_LOUD,0.18
+The volume feels a little high for this room,TOO_LOUD,0.3
+A minor drop in volume would be better for me,TOO_LOUD,0.22
+The output is noticeably louder than I want,TOO_LOUD,0.48
+The volume is too high and needs reducing,TOO_LOUD,0.52
+I am finding the volume too loud right now,TOO_LOUD,0.45
+Please reduce the output level for me,TOO_LOUD,0.42
+The sound is uncomfortably loud in this setting,TOO_LOUD,0.55
+The amplification needs to come down,TOO_LOUD,0.5
+I need the output reduced please,TOO_LOUD,0.45
+The volume is pushing past what I can tolerate,TOO_LOUD,0.58
+This level of output is too much for me,TOO_LOUD,0.52
+Can you make it a bit quieter please,TOO_LOUD,0.38
+The output is stronger than I need it to be,TOO_LOUD,0.42
+The volume is making sounds feel overwhelming,TOO_LOUD,0.58
+I need the volume brought down now,TOO_LOUD,0.48
+The gain is too high for comfortable listening,TOO_LOUD,0.55
+The output is far too strong for this situation,TOO_LOUD,0.6
+The volume level is very uncomfortable right now,TOO_LOUD,0.68
+The output is excessively loud and uncomfortable,TOO_LOUD,0.72
+I am really struggling with how loud this is,TOO_LOUD,0.7
+The amplification is painfully excessive right now,TOO_LOUD,0.75
+The volume is hurting my ears right now,TOO_LOUD,0.78
+The output is way too strong and uncomfortable,TOO_LOUD,0.72
+The loudness is causing me real problems,TOO_LOUD,0.7
+This is much too loud for comfortable listening,TOO_LOUD,0.68
+The output level is painfully high right now,TOO_LOUD,0.78
+The amplification is far beyond comfortable,TOO_LOUD,0.75
+The volume is at a level that causes discomfort,TOO_LOUD,0.7
+I cannot tolerate how loud the output is,TOO_LOUD,0.78
+The sound level is causing serious discomfort,TOO_LOUD,0.8
+The output is blasting and painful right now,TOO_LOUD,0.82
+The loudness level is intolerable right now,TOO_LOUD,0.8
+The volume is at a painful and unbearable level,TOO_LOUD,0.9
+My ears are throbbing from the excessive volume,TOO_LOUD,0.88
+The output is deafening and completely unbearable,TOO_LOUD,0.92
+The amplification is agonizingly loud right now,TOO_LOUD,0.9
+The volume is so extreme it is physically painful,TOO_LOUD,0.92
+I cannot bear this level of loudness at all,TOO_LOUD,0.88
+The output is at an agonizing and unbearable level,TOO_LOUD,0.95
+The loudness is completely destroying my comfort,TOO_LOUD,0.9
+The volume is causing me severe ear pain,TOO_LOUD,0.92
+The amplification is so high it is completely unbearable,TOO_LOUD,0.95
+The output is excruciatingly loud and painful,TOO_LOUD,0.95
+The volume is at an absolutely agonizing level,TOO_LOUD,1.0
+The output is completely and utterly unbearable,TOO_LOUD,0.95
+The loudness is at a devastatingly painful level,TOO_LOUD,1.0
+The sound is just a fraction below my ideal level,TOO_QUIET,0.06
+A microscopic boost in volume would be perfect,TOO_QUIET,0.05
+The output is imperceptibly softer than ideal,TOO_QUIET,0.07
+Just the slightest increase in volume would help,TOO_QUIET,0.09
+The volume is barely below what I need,TOO_QUIET,0.1
+The output could be a little stronger please,TOO_QUIET,0.18
+I would like the volume raised slightly,TOO_QUIET,0.2
+The sound is a bit soft for me right now,TOO_QUIET,0.22
+Could you increase the output level a little,TOO_QUIET,0.2
+The volume is slightly below comfortable for me,TOO_QUIET,0.25
+A small boost in output would be welcome,TOO_QUIET,0.18
+The amplification is a touch low for my needs,TOO_QUIET,0.22
+I would like a little more volume please,TOO_QUIET,0.2
+The sound could be a bit louder for me,TOO_QUIET,0.25
+Can you turn the volume up slightly please,TOO_QUIET,0.18
+The output is a little lower than I prefer,TOO_QUIET,0.22
+I need just a touch more volume,TOO_QUIET,0.2
+The sound level is mildly insufficient for me,TOO_QUIET,0.28
+A minor increase in output would be helpful,TOO_QUIET,0.22
+The volume feels slightly low for this environment,TOO_QUIET,0.3
+The volume is noticeably too low for me,TOO_QUIET,0.45
+I need the output level raised please,TOO_QUIET,0.48
+The sound is too quiet for me to follow properly,TOO_QUIET,0.55
+Please increase the volume for me,TOO_QUIET,0.42
+The output is too soft and I am missing things,TOO_QUIET,0.52
+I cannot follow what people are saying it is too quiet,TOO_QUIET,0.58
+The amplification needs to be increased,TOO_QUIET,0.5
+Everything sounds muffled because it is too quiet,TOO_QUIET,0.55
+I need more volume to hear properly,TOO_QUIET,0.48
+The output is not loud enough for me,TOO_QUIET,0.45
+Please turn the volume up,TOO_QUIET,0.42
+The sound level is too low and I am struggling,TOO_QUIET,0.55
+I need the output raised significantly,TOO_QUIET,0.6
+The volume is far too low for comfortable hearing,TOO_QUIET,0.58
+I keep missing sounds because the output is too low,TOO_QUIET,0.52
+The gain needs to be much higher,TOO_QUIET,0.55
+Everything is too quiet and I cannot hear properly,TOO_QUIET,0.6
+I cannot hear conversations clearly at this volume,TOO_QUIET,0.55
+The output is insufficient for my hearing needs,TOO_QUIET,0.5
+Please boost the output significantly,TOO_QUIET,0.62
+The volume is very low and I am struggling greatly,TOO_QUIET,0.7
+I can barely make out any sounds at this level,TOO_QUIET,0.72
+The output is far too low to hear anything clearly,TOO_QUIET,0.75
+I am straining very hard to hear and missing a lot,TOO_QUIET,0.72
+The amplification is completely inadequate right now,TOO_QUIET,0.75
+The volume is so low I cannot participate in conversations,TOO_QUIET,0.78
+I can hardly hear anything at this output level,TOO_QUIET,0.78
+The sound is far too quiet and I feel cut off,TOO_QUIET,0.72
+I am really struggling to hear at this volume level,TOO_QUIET,0.7
+The output is not nearly loud enough for me to function,TOO_QUIET,0.78
+I cannot follow any conversation at this low volume,TOO_QUIET,0.8
+The gain is so low I am completely missing everything,TOO_QUIET,0.82
+I can barely detect any sound at all right now,TOO_QUIET,0.8
+The output is completely inadequate and very distressing,TOO_QUIET,0.78
+Everything is so quiet I feel completely isolated,TOO_QUIET,0.8
+The volume is at an impossibly low and useless level,TOO_QUIET,0.9
+I cannot hear anything at all at this output level,TOO_QUIET,0.92
+The output is so low it is completely non-functional,TOO_QUIET,0.9
+I am completely cut off from all sound around me,TOO_QUIET,0.88
+The amplification has dropped to a useless level,TOO_QUIET,0.9
+I hear absolutely nothing at this output level,TOO_QUIET,0.95
+The volume is so low it is completely inaudible,TOO_QUIET,0.92
+I cannot detect even the loudest sounds around me,TOO_QUIET,0.9
+The output is at an agonizingly low and silent level,TOO_QUIET,0.95
+I am hearing absolutely nothing from my hearing aid,TOO_QUIET,0.92
+The sound is completely inaudible at this level,TOO_QUIET,0.95
+I cannot hear a single thing right now,TOO_QUIET,0.95
+The output has essentially gone completely silent,TOO_QUIET,1.0
+I am completely deaf to all sounds right now,TOO_QUIET,1.0
+There is absolutely no sound coming through at all,TOO_QUIET,1.0
+A barely detectable edge to the high frequencies,TOO_SHARP,0.06
+There is an almost imperceptible shrillness,TOO_SHARP,0.04
+A very faint harshness in the upper register,TOO_SHARP,0.08
+Just a hint of brightness that is barely noticeable,TOO_SHARP,0.1
+The tiniest trace of shrillness in some sounds,TOO_SHARP,0.07
+The sound has a mildly grating quality in the treble,TOO_SHARP,0.28
+There is a slightly harsh edge to consonants,TOO_SHARP,0.3
+The treble sounds a little too crisp and edgy,TOO_SHARP,0.26
+I notice a mild shrillness on certain sounds,TOO_SHARP,0.24
+The high frequencies are mildly too prominent,TOO_SHARP,0.28
+Speech has a slightly harsh quality to it,TOO_SHARP,0.3
+There is a mild brittleness in the upper frequencies,TOO_SHARP,0.26
+The treble is a touch too bright and edgy,TOO_SHARP,0.22
+Voices have a slightly tinny edge to them,TOO_SHARP,0.24
+I hear a mild whistling quality on high pitched sounds,TOO_SHARP,0.28
+The sound is a bit too crispy in the upper range,TOO_SHARP,0.3
+There is a slight harshness on s sounds in speech,TOO_SHARP,0.26
+The treble brightness is mildly uncomfortable,TOO_SHARP,0.32
+Consonants have a slightly grating quality,TOO_SHARP,0.28
+The upper frequencies have a mildly harsh character,TOO_SHARP,0.3
+There is a subtle shrill quality to high pitched voices,TOO_SHARP,0.34
+The treble is a little too forward and prominent,TOO_SHARP,0.28
+The treble is noticeably too strident and grating,TOO_SHARP,0.52
+High frequency sounds are uncomfortably harsh,TOO_SHARP,0.55
+The sound has a grating and tinny quality,TOO_SHARP,0.5
+Consonants sound harsh and are bothering me,TOO_SHARP,0.52
+The treble is too bright and needs reducing,TOO_SHARP,0.55
+Sibilant sounds are too prominent and harsh,TOO_SHARP,0.55
+The upper frequencies are unpleasantly grating,TOO_SHARP,0.5
+I find the treble brightness very uncomfortable,TOO_SHARP,0.55
+The shrillness in voices is really bothering me,TOO_SHARP,0.58
+High pitched sounds feel harsh and grating,TOO_SHARP,0.55
+The treble has too much harshness and edge,TOO_SHARP,0.58
+Speech has a harsh and brittle character to it,TOO_SHARP,0.52
+The sibilants in speech are unpleasantly sharp,TOO_SHARP,0.55
+The treble is far too forward and harsh for me,TOO_SHARP,0.6
+I cannot ignore how harsh the high frequencies are,TOO_SHARP,0.6
+The brightness in the treble is grating on me,TOO_SHARP,0.55
+High frequency sounds have an uncomfortable edge,TOO_SHARP,0.52
+The treble harshness is making listening tiring,TOO_SHARP,0.58
+Speech consonants sound jagged and harsh,TOO_SHARP,0.55
+The upper frequency range is too aggressive,TOO_SHARP,0.6
+The treble is very harsh and difficult to tolerate,TOO_SHARP,0.7
+High frequency sounds are very piercing right now,TOO_SHARP,0.72
+The shrillness is severe and very uncomfortable,TOO_SHARP,0.75
+The treble is harsh enough to cause real discomfort,TOO_SHARP,0.72
+I am struggling with how shrill everything sounds,TOO_SHARP,0.7
+The grating quality of the treble is genuinely painful,TOO_SHARP,0.75
+High pitched sounds are piercing and very hard to bear,TOO_SHARP,0.78
+The shrillness is at a level that causes me distress,TOO_SHARP,0.72
+The treble harshness is genuinely hurting my ears,TOO_SHARP,0.78
+Sibilants are so harsh they are piercing my ears,TOO_SHARP,0.8
+The upper frequencies are painfully harsh right now,TOO_SHARP,0.8
+The treble is so sharp it is causing real discomfort,TOO_SHARP,0.78
+High pitched sounds feel like they are stabbing my ears,TOO_SHARP,0.82
+The shrillness is very intense and very painful,TOO_SHARP,0.8
+The treble harshness is at an intolerable level,TOO_SHARP,0.82
+The harshness in the treble is absolutely unbearable,TOO_SHARP,0.9
+The shrillness is agonizing and I cannot tolerate it,TOO_SHARP,0.92
+Every sibilant sound is excruciatingly painful,TOO_SHARP,0.9
+The treble harshness is causing me severe pain,TOO_SHARP,0.92
+High frequency sounds are agonizingly shrill,TOO_SHARP,0.9
+The shrillness is completely unbearable right now,TOO_SHARP,0.95
+The treble is so harsh it is physically agonizing,TOO_SHARP,0.95
+I am in real pain from the shrillness right now,TOO_SHARP,0.92
+The harshness of the high frequencies is excruciating,TOO_SHARP,0.95
+Every sharp consonant causes me real physical pain,TOO_SHARP,0.9
+The treble shrillness is at an agonizing intensity,TOO_SHARP,0.95
+The high frequency harshness is completely agonizing,TOO_SHARP,1.0
+The shrillness is causing me excruciating pain,TOO_SHARP,1.0
+I cannot bear the agonizing harshness of the treble,TOO_SHARP,1.0
+The sibilant sounds are excruciatingly sharp and painful,TOO_SHARP,0.92
+The upper frequency harshness is devastatingly painful,TOO_SHARP,0.95
+Every high pitched sound is piercing through my ears,TOO_SHARP,0.9
+The treble is absolutely agonizing to listen to,TOO_SHARP,0.95
+The shrillness has reached an absolutely devastating level,TOO_SHARP,1.0
+The harshness in the treble is causing extreme agony,TOO_SHARP,1.0
+That is great thank you very much,BALANCED,0.0
+Yes I can hear perfectly now,BALANCED,0.0
+This is exactly what I was looking for,BALANCED,0.0
+I can hear everything now,BALANCED,0.0
+That sounds much better,BALANCED,0.0
+Yes this is comfortable,BALANCED,0.0
+I can follow the conversation again,BALANCED,0.0
+The sound is just right for me,BALANCED,0.0
+I am happy with this now,BALANCED,0.0
+Yes that works for me,BALANCED,0.0
+I can hear clearly and comfortably,BALANCED,0.0
+This sounds perfect to me,BALANCED,0.0
+Much better I can hear well now,BALANCED,0.0
+That is the right level for me,BALANCED,0.0
+I can hear everything without difficulty,BALANCED,0.0
+This is very good thank you,BALANCED,0.0
+I can follow what people are saying now,BALANCED,0.0
+That is comfortable and clear,BALANCED,0.0
+I am satisfied with this setting now,BALANCED,0.0
+Yes this sounds right to me,BALANCED,0.0
+I can hear speech clearly now,BALANCED,0.0
+This level is good for me,BALANCED,0.0
+That is better thank you,BALANCED,0.0
+I can hear comfortably now,BALANCED,0.0
+This setting is just right,BALANCED,0.0
+I am comfortable and can hear everything,BALANCED,0.0
+Yes this is what I needed,BALANCED,0.0
+I can hear people speaking naturally now,BALANCED,0.0
+This sounds good and comfortable,BALANCED,0.0
+I have no issues with the sound now,BALANCED,0.0
+That sounds natural and clear,BALANCED,0.0
+I can hear without any problem,BALANCED,0.0
+This is a good comfortable level,BALANCED,0.0
+I am happy and can hear clearly now,BALANCED,0.0
+The sound feels right and natural,BALANCED,0.0
+I can hear all around me clearly now,BALANCED,0.0
+This feels just right for me thank you,BALANCED,0.0
+I can understand everyone now,BALANCED,0.0
+This is comfortable and I like it,BALANCED,0.0
+The sound is clear and I have no complaints,BALANCED,0.0
+I can hear well and feel comfortable,BALANCED,0.0
+Yes that is much better thank you,BALANCED,0.0
+I can follow speech easily and clearly,BALANCED,0.0
+This sounds nice and natural to me,BALANCED,0.0
+I am not straining to hear at all now,BALANCED,0.0
+The sound is pleasant and clear now,BALANCED,0.0
+I can hear without any strain at all,BALANCED,0.0
+This feels good to me,BALANCED,0.0
+I am satisfied and comfortable now,BALANCED,0.0
+Yes this is exactly right for me,BALANCED,0.0

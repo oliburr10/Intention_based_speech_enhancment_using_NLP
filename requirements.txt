@@ -1,0 +1,15 @@
+# Runtime dependencies. For development use:  pip install -e '.[all]'
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+scikit-learn>=1.3
+joblib>=1.3
+matplotlib>=3.7
+
+# NLP pipeline (the 110M-parameter embedding model lives here)
+sentence-transformers>=2.2
+xgboost>=2.0
+
+# Real-time audio I/O
+sounddevice>=0.4
+soundfile>=0.12

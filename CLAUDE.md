@@ -152,6 +152,22 @@ From supervisor feedback (Sigtryggur):
   score→parameter mapping, and using a Euclidean KD-tree for kNN (embeddings are
   already normalized).
 
+## Where the code lives
+
+- `src/intent_se/audio/` -- `stft.py` (WOLA), `imcra.py`, `wiener.py`, `pipeline.py`
+- `src/intent_se/nlp/` -- `dataset.py`, `embeddings.py`, `classifier.py`,
+  `severity.py`, `evaluate.py`
+- `src/intent_se/control/mapping.py` -- the NLP->DSP bridge (the open problem;
+  its `max_delta` values are uncalibrated placeholders, marked as such)
+- `src/intent_se/config.py` -- every tunable, with its justification in the docstring
+- `data/complaints_v4.csv` -- the 1106-sentence dataset
+- `tests/` -- 93 tests, runs fully offline (no model download)
+
+Entry points: `intent-se-train`, `intent-se-run`, `intent-se-demo`.
+
+The original Jupyter notebooks are **not** in this repo or in Drive; `notebooks/`
+holds a placeholder README for them.
+
 ## Conventions
 
 - Python: PyTorch, NumPy, SciPy, librosa/torchaudio, scikit-learn, XGBoost,
