@@ -355,8 +355,6 @@ and it is the most important next step for this work.
    paired smartphone.
 4. **The interface is typed text.** A real deployment needs automatic speech
    recognition in front of the classifier.
-5. **Mono processing.** Both microphone channels carry identical content and are
-   averaged; a production system would keep them separate for binaural processing.
 
 None of these require rethinking the core architecture.
 
