@@ -93,6 +93,67 @@ class AudioConfig:
 
 
 @dataclass(frozen=True)
+class DeviceConfig:
+    """Soundcard routing the system was measured on.
+
+    The hearing aid microphone and the headset were on **different** devices,
+    which is why a single device index is not enough::
+
+        [1] Black Gold                   (in:  0, out:  2)   <- headset
+        [5] Fireface UC Mac (23913018)   (in: 18, out: 18)   <- hearing aid mic
+
+    On the Fireface the microphone arrives on **hardware lines 5 and 6**, which
+    are zero-based channel indices 4 and 5. The stream therefore has to open all
+    18 input channels and pick those two -- opening only the first two would
+    capture the wrong inputs entirely.
+
+    .. warning::
+       Device indices are assigned by the operating system and change when
+       interfaces are plugged in or removed. Confirm them with
+       ``intent-se-run --list-devices`` before a session; override with
+       ``--input-device`` / ``--output-device``.
+    """
+
+    input_device: int | None = 5
+    """Fireface UC Mac (23913018) -- carries the hearing aid microphone."""
+
+    output_device: int | None = 1
+    """Black Gold -- the headset."""
+
+    input_channels: int = 18
+    """Channels opened on the input device. The Fireface exposes 18; all are
+    opened so that lines 5 and 6 are reachable."""
+
+    output_channels: int = 2
+    """Channels opened on the output device."""
+
+    input_left: int = 4
+    """Hardware line 5 (zero-based index 4)."""
+
+    input_right: int = 5
+    """Hardware line 6 (zero-based index 5)."""
+
+    output_channel: int = 0
+    """Hardware line 1 (zero-based index 0). The processed mono signal is
+    written here and to the next channel, so both ears of the headset get it."""
+
+    def validate(self) -> None:
+        """Raise if the selected input channels lie outside the opened range."""
+        for name, ch in (("input_left", self.input_left),
+                         ("input_right", self.input_right)):
+            if not 0 <= ch < self.input_channels:
+                raise ValueError(
+                    f"{name}={ch} is outside the {self.input_channels} opened "
+                    f"input channels."
+                )
+        if not 0 <= self.output_channel < self.output_channels:
+            raise ValueError(
+                f"output_channel={self.output_channel} is outside the "
+                f"{self.output_channels} opened output channels."
+            )
+
+
+@dataclass(frozen=True)
 class IMCRAConfig:
     """IMCRA parameters, following Cohen (2003).
 
@@ -200,6 +261,7 @@ class Config:
     """Top-level configuration bundle."""
 
     audio: AudioConfig = field(default_factory=AudioConfig)
+    devices: DeviceConfig = field(default_factory=DeviceConfig)
     imcra: IMCRAConfig = field(default_factory=IMCRAConfig)
     wiener: WienerConfig = field(default_factory=WienerConfig)
     nlp: NLPConfig = field(default_factory=NLPConfig)

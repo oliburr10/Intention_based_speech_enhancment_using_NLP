@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 
 from intent_se.audio.pipeline import SpeechEnhancer
-from intent_se.config import AudioConfig, NLPConfig
+from intent_se.config import AudioConfig, DeviceConfig, NLPConfig
 from intent_se.control.parameter_probe import ParameterProbe
 from intent_se.nlp.classifier import IntentClassifier
 from intent_se.nlp.embeddings import SentenceEmbedder
@@ -148,8 +148,17 @@ def main(argv: list[str] | None = None) -> int:
 
     stream_thread = None
     if not args.dry_run:
+        routing = DeviceConfig()
         print("Audio devices:")
-        describe_devices(device)
+        describe_devices(
+            device if device is not None
+            else (routing.input_device, routing.output_device)
+        )
+        print(f"  input lines : {routing.input_left + 1} & {routing.input_right + 1} "
+              f"(channels {routing.input_left} & {routing.input_right} "
+              f"of {routing.input_channels} opened)")
+        print(f"  output line : {routing.output_channel + 1} "
+              f"(channel {routing.output_channel} of {routing.output_channels} opened)")
         stream_thread = threading.Thread(
             target=enhancer.run_stream,
             kwargs={"device": device},

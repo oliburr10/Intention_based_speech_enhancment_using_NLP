@@ -8,7 +8,7 @@ import numpy as np
 from intent_se.audio.imcra import IMCRA
 from intent_se.audio.stft import SlidingSTFT
 from intent_se.audio.wiener import ParametricWienerFilter
-from intent_se.config import AudioConfig, IMCRAConfig, WienerConfig
+from intent_se.config import AudioConfig, DeviceConfig, IMCRAConfig, WienerConfig
 
 __all__ = ["SpeechEnhancer", "EnhancerStats"]
 
@@ -23,7 +23,11 @@ class EnhancerStats:
     mean_snr_db: float = 0.0
 
 
-def to_mono(block: np.ndarray) -> np.ndarray:
+def to_mono(
+    block: np.ndarray,
+    left: int | None = None,
+    right: int | None = None,
+) -> np.ndarray:
     """Collapse a possibly multi-channel block to mono by averaging.
 
     The hearing aid microphone delivers a two-channel signal on the soundcard,
@@ -36,6 +40,11 @@ def to_mono(block: np.ndarray) -> np.ndarray:
     ----------
     block:
         Shape ``(n_samples,)`` or ``(n_samples, n_channels)``.
+    left, right:
+        Zero-based channel indices to mix. Given both, only those two are used
+        and every other channel is ignored -- necessary on a multichannel
+        interface where the microphone sits on a specific pair of lines.
+        Omitted, all channels are averaged.
 
     Returns
     -------
@@ -45,6 +54,13 @@ def to_mono(block: np.ndarray) -> np.ndarray:
     block = np.asarray(block, dtype=np.float64)
     if block.ndim == 1:
         return block
+    if left is not None and right is not None:
+        if max(left, right) >= block.shape[1]:
+            raise ValueError(
+                f"Channels {left} and {right} requested, but the block has only "
+                f"{block.shape[1]}. Check input_channels in DeviceConfig."
+            )
+        return (block[:, left] + block[:, right]) * 0.5
     return block.mean(axis=1)
 
 
@@ -226,8 +242,9 @@ class SpeechEnhancer:
 
     def run_stream(
         self,
-        device: int | str | None = None,
+        device: int | str | tuple | None = None,
         duration: float | None = None,
+        devices: DeviceConfig | None = None,
     ) -> None:
         """Open a duplex audio stream and enhance in real time.
 
@@ -238,10 +255,14 @@ class SpeechEnhancer:
         Parameters
         ----------
         device:
-            Soundcard device, as accepted by ``sounddevice``. ``None`` uses the
-            system default.
+            Overrides the device selection: an index, a name, or an
+            ``(input, output)`` pair. ``None`` uses ``devices``.
         duration:
             Seconds to run. ``None`` runs until interrupted.
+        devices:
+            Soundcard routing -- which devices, how many channels to open, and
+            which input lines carry the microphone. Defaults to
+            :class:`~intent_se.config.DeviceConfig`.
         """
         try:
             import sounddevice as sd
@@ -251,21 +272,33 @@ class SpeechEnhancer:
                 "Install it with: pip install '.[realtime]'"
             ) from exc
 
+        routing = devices or DeviceConfig()
+        routing.validate()
+        if device is None:
+            device = (routing.input_device, routing.output_device)
+
         self.self_test()
 
         def callback(indata, outdata, frames, time_info, status):  # noqa: ANN001
             if status:  # pragma: no cover - hardware dependent
                 print(f"[audio] {status}")
-            enhanced = self.process_block(indata.copy())
-            # Route the processed mono signal to every output channel.
-            outdata[:] = enhanced[:, None]
+            # Take only the two lines carrying the microphone, not the mean of
+            # every open input channel.
+            mono = to_mono(indata, routing.input_left, routing.input_right)
+            enhanced = self.process_block(mono)
+            # Silence every output channel, then write the processed signal to
+            # the headset pair, so nothing leaks onto unused outputs.
+            outdata[:] = 0.0
+            outdata[:, routing.output_channel] = enhanced
+            if routing.output_channel + 1 < outdata.shape[1]:
+                outdata[:, routing.output_channel + 1] = enhanced
 
         with sd.Stream(
             device=device,
             samplerate=self.cfg.sample_rate,
             blocksize=self.cfg.block_size,
             dtype="float32",
-            channels=(2, 2),
+            channels=(routing.input_channels, routing.output_channels),
             callback=callback,
         ):
             if duration is None:  # pragma: no cover - interactive
