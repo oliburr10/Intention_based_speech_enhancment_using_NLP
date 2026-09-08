@@ -246,10 +246,16 @@ class IntentClassifier:
         return self.model.predict_proba(x)
 
     def confidence(self, x: np.ndarray) -> np.ndarray:
-        """Probability of the predicted class, or 1.0 if unavailable.
+        """Highest class probability per sample, or 1.0 if unavailable.
 
-        The controller uses this to ignore low-confidence classifications
-        rather than acting on a guess.
+        :class:`~intent_se.control.parameter_probe.ParameterProbe` gates on this
+        so a low-confidence classification is ignored rather than acted on.
+
+        .. note::
+           Estimators without ``predict_proba`` fall back to 1.0 for every
+           sample, which effectively disables that gate. All five candidates in
+           :func:`build_classifiers` expose probabilities, but a substitution
+           (``LinearSVC``, say) would silently remove the check.
         """
         try:
             return self.predict_proba(x).max(axis=1)
