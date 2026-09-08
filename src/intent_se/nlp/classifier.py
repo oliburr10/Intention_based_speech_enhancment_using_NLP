@@ -1,29 +1,4 @@
-"""Intent classification over sentence embeddings.
-
-Five classifiers are trained and compared, spanning simple to complex. The
-spread is not padding -- it answers a real design question: **does the embedding
-space actually need non-linear decision boundaries, or has the sentence
-transformer already organised the six classes into linearly separable
-regions?**
-
-If the transformer has done its job, a linear classifier should be sufficient
-and preferable, because it makes fewer assumptions and is less prone to
-overfitting on a dataset this size. If it has not, the non-linear models should
-win. The result answers the question either way.
-
-Selection protocol
-------------------
-1. Five-fold **stratified** cross-validation on the development pool
-   (train + validation, 940 sentences), scored by macro-averaged F1.
-2. Macro F1 rather than accuracy, because it weights all six classes equally
-   regardless of size -- otherwise a classifier gets credit for the large
-   classes while quietly underperforming on the small ones.
-3. Ties on CV are broken on **generalisation**, not raw accuracy: the smaller
-   the drop from validation to test, the more trustworthy the classifier.
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,31 +24,6 @@ __all__ = [
 
 def build_classifiers(config: NLPConfig | None = None) -> dict[str, object]:
     """Construct the five candidate classifiers.
-
-    ==================  =========================================================
-    Classifier          Rationale
-    ==================  =========================================================
-    Logistic Regression Linear boundary; six one-vs-rest hyperplanes.
-    Linear SVM          Linear, but maximises the margin -- usually generalises
-                        better in high dimensions.
-    kNN (k=15)          Learns no boundary at all; votes among the 15 nearest
-                        training sentences. Cosine distance, since embeddings
-                        are L2-normalised.
-    MLP                 Non-linear boundaries via two ReLU hidden layers.
-    XGBoost             Regularised gradient-boosted trees; a strong non-linear
-                        baseline of a completely different family.
-    ==================  =========================================================
-
-    Parameters
-    ----------
-    config:
-        Hyperparameters (``knn_neighbors``, ``mlp_hidden``, ``random_state``).
-
-    Returns
-    -------
-    dict[str, object]
-        Name -> unfitted scikit-learn compatible estimator. XGBoost is omitted
-        if the optional ``xgboost`` package is not installed.
     """
     cfg = config or NLPConfig()
 
@@ -144,22 +94,6 @@ def cross_validate_all(
     models: dict[str, object] | None = None,
 ) -> list[CVResult]:
     """Run stratified k-fold CV for every candidate classifier.
-
-    Parameters
-    ----------
-    x:
-        Embeddings of shape ``(n_samples, dim)``.
-    y:
-        Integer label ids of shape ``(n_samples,)``.
-    config:
-        Fold count and random seed.
-    models:
-        Candidates to evaluate. Defaults to :func:`build_classifiers`.
-
-    Returns
-    -------
-    list[CVResult]
-        Sorted by mean macro-F1, best first.
     """
     cfg = config or NLPConfig()
     models = models if models is not None else build_classifiers(cfg)
@@ -196,12 +130,6 @@ def evaluate_on(model: object, x: np.ndarray, y: np.ndarray) -> dict[str, float]
 
 class IntentClassifier:
     """Fitted intent classifier with label decoding and persistence.
-
-    Parameters
-    ----------
-    model:
-        A fitted or unfitted scikit-learn compatible estimator. Defaults to the
-        linear SVM, which is the model selected in the thesis.
     """
 
     def __init__(self, model: object | None = None) -> None:

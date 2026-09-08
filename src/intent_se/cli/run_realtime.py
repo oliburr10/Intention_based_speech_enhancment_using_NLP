@@ -1,32 +1,4 @@
-"""Run the full system: live audio enhancement steered by typed complaints.
-
-Opens a duplex audio stream in a background thread and reads complaint
-sentences from stdin. Each sentence is embedded, classified, scored for
-severity, and turned into a DSP parameter update that takes effect immediately
-on the running stream.
-
-This is the end-to-end loop the thesis is built around: language in, audible
-parameter change out.
-
-Usage
------
-::
-
-    python -m intent_se.cli.run_realtime --models artifacts/models
-    python -m intent_se.cli.run_realtime --list-devices
-    python -m intent_se.cli.run_realtime --device 3 --dry-run
-
-``--dry-run`` skips the audio stream and only prints the parameter decisions,
-which is the way to exercise the NLP path on a machine with no soundcard.
-
-.. note::
-   The interface is typed text, not speech. A real deployment would need
-   automatic speech recognition in front of the classifier -- see the
-   limitations section of the README.
-"""
-
 from __future__ import annotations
-
 import argparse
 import sys
 import threading
@@ -47,10 +19,6 @@ Type a complaint in plain language, for example:
     voices sound muffled
     everything is far too loud
     this sounds good now
-
-Commands:  :params   show current DSP parameters
-           :reset    restore defaults
-           :quit     exit
 """
 
 
@@ -88,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.list_devices:
         return list_devices()
 
-    # -- Load the NLP models ------------------------------------------
+    #Load the NLP models
     classifier_path = args.models / "intent_classifier.joblib"
     scorer_path = args.models / "severity_scorer.joblib"
 
@@ -105,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     scorer = SeverityScorer.load(scorer_path)
     probe = ParameterProbe()
 
-    # -- Audio --------------------------------------------------------
+    #Audio
     enhancer = SpeechEnhancer(
         AudioConfig(sample_rate=args.samplerate, block_size=args.blocksize,
                     hop_length=args.blocksize)
@@ -127,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(BANNER)
 
-    # -- Interactive loop ---------------------------------------------
+    # Interactive loop
     try:
         while True:
             try:

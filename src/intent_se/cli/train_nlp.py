@@ -1,7 +1,5 @@
 """Train and evaluate the NLP pipeline.
 
-Reproduces the full model-selection protocol:
-
 1. Load the dataset and split it 70 / 15 / 15, stratified.
 2. Embed every sentence with ``all-mpnet-base-v2``.
 3. Five-fold stratified CV on the development pool (train + val).
@@ -9,13 +7,6 @@ Reproduces the full model-selection protocol:
    classifier with the smallest validation-to-test drop among the CV leaders.
 5. Fit the Ridge severity scorer, selecting alpha by CV.
 6. Write models, tables and figures to disk.
-
-Usage
------
-::
-
-    python -m intent_se.cli.train_nlp --output-dir artifacts
-    python -m intent_se.cli.train_nlp --no-figures --data data/complaints_v4.csv
 """
 
 from __future__ import annotations
@@ -58,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     (out / "models").mkdir(parents=True, exist_ok=True)
     (out / "tables").mkdir(parents=True, exist_ok=True)
 
-    # -- 1. Data ------------------------------------------------------
+    # 1. Data
     df = load_dataset(args.data)
     print(f"Loaded {len(df)} sentences\n")
     print(class_distribution(df).to_string(), "\n")
@@ -66,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     split = split_dataset(df, cfg)
     print(split.summary().to_string(), "\n")
 
-    # -- 2. Embeddings ------------------------------------------------
+    # 2. Embeddings 
     embedder = SentenceEmbedder(cfg, cache_dir=args.cache_dir)
     print(f"Embedding with {cfg.embedding_model} ...")
 
@@ -82,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     y_val = split.val["label_id"].to_numpy()
     y_test = split.test["label_id"].to_numpy()
 
-    # -- 3. Cross-validation ------------------------------------------
+    # 3. Cross-validation
     print(f"{cfg.cv_folds}-fold stratified CV on {len(x_dev)} sentences (macro-F1):")
     cv_results = clf_mod.cross_validate_all(x_dev, y_dev, cfg)
     for result in cv_results:
@@ -91,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     cv_table.to_csv(out / "tables" / "cross_validation.csv")
     print()
 
-    # -- 4. Generalisation: val vs test -------------------------------
+    # 4. Generalisation: val vs test
     print("Fitting candidates on train, scoring on validation and test:")
     rows = []
     fitted = {}
@@ -124,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
           f"(val->test drop {gen.loc[selected, 'val_to_test_drop']:.4f}, "
           f"test macro-F1 {gen.loc[selected, 'test_f1']:.4f})\n")
 
-    # -- 5. Final classifier on the full development pool -------------
+    # 5. Final classifier on the full development pool
     final = clf_mod.build_classifiers(cfg)[selected]
     intent = clf_mod.IntentClassifier(final).fit(x_dev, y_dev)
     y_pred = intent.predict(x_test)
@@ -139,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
 
     intent.save(out / "models" / "intent_classifier.joblib")
 
-    # -- 6. Severity scorer -------------------------------------------
+    # 6. Severity scorer
     complaints_dev = dev["severity"].to_numpy()
     scorer = SeverityScorer(config=cfg)
     search = scorer.select_alpha(x_dev, complaints_dev)
@@ -162,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
 
     scorer.save(out / "models" / "severity_scorer.joblib")
 
-    # -- 7. Figures ----------------------------------------------------
+    # 7. Figures
     if not args.no_figures:
         print("Writing figures ...")
         eval_mod.plot_confusion_matrix(
@@ -178,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
             out / "figures" / "severity_scatter.png",
         )
 
-    # -- 8. Summary ----------------------------------------------------
+    # 8. Summary
     summary = {
         "n_sentences": int(len(df)),
         "classes": list(CLASS_ORDER),

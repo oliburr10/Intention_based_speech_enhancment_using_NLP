@@ -1,27 +1,7 @@
+
+
+
 """Loading and splitting the hearing-aid complaint dataset.
-
-No public dataset exists for hearing-aid complaint sentences with severity
-labels, so this one was constructed for the project: 1106 sentences across six
-intent classes, generated with large language models and hand-labelled for
-severity.
-
-Severity follows a four-level linguistic heuristic:
-
-=========================  ==================================  ==============
-Language                   Examples                            Severity
-=========================  ==================================  ==============
-minimising                 "slightly", "barely", "a touch"     0.05 -- 0.25
-plain                      "there is background noise"         0.30 -- 0.45
-intensive                  "very", "really", "constantly"      0.50 -- 0.80
-extreme                    "unbearable", "cannot at all"       0.85 -- 1.00
-=========================  ==================================  ==============
-
-``BALANCED`` is always exactly 0.0.
-
-.. warning::
-   The sentences are LLM-generated and the severity labels reflect a single
-   annotator's judgement rather than a standardised perceptual benchmark. See
-   the limitations section of the README.
 """
 
 from __future__ import annotations
@@ -67,25 +47,7 @@ class DatasetSplit:
 
 
 def load_dataset(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the complaint dataset from CSV.
-
-    Parameters
-    ----------
-    path:
-        CSV with columns ``sentence``, ``label``, ``severity``. Defaults to
-        ``data/complaints_v4.csv`` in the repository root.
-
-    Returns
-    -------
-    pd.DataFrame
-        Columns ``sentence``, ``label``, ``severity``, ``label_id``.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the CSV is missing.
-    ValueError
-        If labels or severities fall outside their expected domains.
+    """Load the complaint dataset from CSV
     """
     path = Path(path) if path is not None else DEFAULT_DATA_PATH
     if not path.exists():
@@ -113,22 +75,7 @@ def load_dataset(path: str | Path | None = None) -> pd.DataFrame:
 
 
 def split_dataset(df: pd.DataFrame, config: NLPConfig | None = None) -> DatasetSplit:
-    """Split into stratified train / validation / test sets.
-
-    Stratification is on the intent label, so every class keeps its proportion
-    in all three splits. With roughly 26 samples per class in each held-out
-    split, an unstratified split would be noticeably unbalanced.
-
-    Parameters
-    ----------
-    df:
-        Dataset as returned by :func:`load_dataset`.
-    config:
-        Split fractions and random seed.
-
-    Returns
-    -------
-    DatasetSplit
+    """Split into stratified train / validation / test sets
     """
     cfg = config or NLPConfig()
 
