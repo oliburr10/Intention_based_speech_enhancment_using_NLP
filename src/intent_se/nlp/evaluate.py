@@ -50,32 +50,11 @@ def confusion_frame(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
 
 
 def generalisation_table(rows: list[dict]) -> pd.DataFrame:
-    """Build the validation-to-test comparison that breaks a CV tie.
-
-    A classifier that holds its performance on genuinely unseen data is more
-    trustworthy than one scoring slightly higher on validation but dropping on
-    test. The ``val_to_test_drop`` column is the deciding number.
-
-    Parameters
-    ----------
-    rows:
-        Dicts with keys ``classifier``, ``cv_f1``, ``val_f1``, ``test_f1``,
-        ``val_accuracy``, ``test_accuracy``.
-
-    Returns
-    -------
-    pd.DataFrame
-        Sorted by ``val_to_test_drop`` ascending -- best generaliser first.
-    """
     frame = pd.DataFrame(rows)
     frame["val_to_test_drop"] = (frame["val_f1"] - frame["test_f1"]).round(4)
     return frame.set_index("classifier").sort_values("val_to_test_drop").round(4)
 
-
-# ----------------------------------------------------------------------
 # Figures
-# ----------------------------------------------------------------------
-
 
 def _savefig(fig, out_path: str | Path | None):
     """Save to ``out_path`` if given; always return the figure."""
@@ -136,17 +115,7 @@ def plot_tsne(
     config: NLPConfig | None = None,
     perplexity: float = 30.0,
 ):
-    """Project the embedding space to 2-D and colour by true class.
 
-    This is visual evidence for the claim that the linear classifiers won
-    because the sentence transformer had already separated the classes. If the
-    clusters are clean here, a hyperplane is the right tool; if they were
-    entangled, a linear boundary could not work and the non-linear models would
-    have won instead.
-
-    Interpret with care: t-SNE preserves local neighbourhoods, not global
-    distances, so cluster sizes and inter-cluster gaps are not to scale.
-    """
     import matplotlib.pyplot as plt
 
     cfg = config or NLPConfig()
