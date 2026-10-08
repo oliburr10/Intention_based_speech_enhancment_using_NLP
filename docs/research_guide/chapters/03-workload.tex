@@ -1,0 +1,586 @@
+\chapter{Your Thesis as a Hardware Workload}\label{ch:workload}
+
+Before you design any hardware, you have to know exactly what you are asking it
+to do: which operations, how many per second, how much memory must persist
+between frames, and under what deadline. Hardware designers call this
+\emph{characterising the workload}. It is the bridge between your thesis and
+everything that follows. Without it, design decisions are guesses. With it,
+most decisions in Phases~1 and~2 follow almost mechanically.
+
+This chapter characterises the thesis system~\cite{burrell2026thesis}. Every
+number marked \emph{measured} comes from
+\file{docs/research_guide/scripts/measure_workload.py}, which instruments the
+thesis code directly. You will rerun it yourself in \cref{st:workload:reproduce}.
+Numbers marked \emph{estimate} are derived by hand from the code and are only as
+good as the counting. \Cref{app:factsheet} collects all of them on one page.
+
+\begin{whybox}
+Most student hardware projects fail quietly here. They start writing RTL before
+they know where the cost is, then optimise the wrong block. Your thesis has an
+unusual advantage: its code is short, readable and already organised into the
+same blocks a chip would have. This chapter turns that code into a cost model.
+\end{whybox}
+
+% =========================================================================
+\section{Two planes, two rates}\label{sec:workload:planes}
+
+Your thesis already has the split that hardware designers use to organise real
+systems (\cref{fig:workload:planes}). The \emph{data plane} is the audio path.
+It processes every sample, never stops, and has a hard deadline: if a frame is
+late, the user hears a glitch. The \emph{control plane} is the intent path. It
+runs only when the user says something, and its only output is a handful of
+parameters.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  blk/.style={draw=#1,fill=#1!8,rounded corners=1.2mm,minimum height=8mm,
+              minimum width=17mm,align=center,line width=0.6pt},
+  blk/.default=brand,
+  arr/.style={-{Stealth[length=2mm]},line width=0.7pt},
+  ctl/.style={-{Stealth[length=2mm]},line width=0.7pt,draw=pitc,dashed},
+  node distance=4mm]
+  % data plane
+  \node[blk] (mic) {Mic\\\num{48}\,kHz};
+  \node[blk,right=of mic] (stft) {STFT\\(window+FFT)};
+  \node[blk,right=of stft] (imcra) {IMCRA\\noise PSD};
+  \node[blk,right=of imcra] (wien) {Parametric\\Wiener};
+  \node[blk,right=of wien] (istft) {ISTFT\\(IFFT+OLA)};
+  \node[blk,right=of istft] (spk) {Receiver};
+  \draw[arr] (mic) -- (stft); \draw[arr] (stft) -- (imcra);
+  \draw[arr] (imcra) -- (wien); \draw[arr] (wien) -- (istft); \draw[arr] (istft) -- (spk);
+  \begin{scope}[on background layer]
+    \node[draw=brand,fill=brandlight!60,rounded corners=2mm,inner sep=3mm,
+          fit=(mic)(spk),label={[anchor=south west,font=\sffamily\bfseries\footnotesize,text=brand]north west:Data plane --- every frame, hard deadline \qty{10.667}{\ms}}] {};
+  \end{scope}
+  % control plane
+  \node[blk=rqc,below=17mm of stft] (txt) {Complaint\\(text)};
+  \node[blk=rqc,right=of txt] (emb) {Sentence\\encoder};
+  \node[blk=rqc,right=of emb] (cls) {Intent class\\+ severity};
+  \node[blk=rqc,right=of cls] (map) {Parameter\\mapping};
+  \draw[arr] (txt) -- (emb); \draw[arr] (emb) -- (cls); \draw[arr] (cls) -- (map);
+  \begin{scope}[on background layer]
+    \node[draw=rqc,fill=rqc!4,rounded corners=2mm,inner sep=3mm,
+          fit=(txt)(map),label={[anchor=north west,font=\sffamily\bfseries\footnotesize,text=rqc]south west:Control plane --- only when the user speaks}] {};
+  \end{scope}
+  \draw[ctl] (map.north) -- node[right,align=left,text=pitc,font=\sffamily\scriptsize]{$\beta$, floor\\$\Rightarrow$ gain LUT} (wien.south);
+  \draw[ctl] (map.east) -| node[pos=0.75,right,align=left,text=pitc,font=\sffamily\scriptsize]{output gain,\\tilt $\Rightarrow$ 2 registers} (istft.south);
+\end{tikzpicture}
+\caption{The thesis system redrawn as a data plane and a control plane. The
+dashed red arrows are the \emph{entire} interface between them. In hardware it
+shrinks to a small lookup table and two registers (opportunities O1 and O2 in
+\cref{sec:workload:opportunities}).}
+\label{fig:workload:planes}
+\end{figure}
+
+\begin{table}[htbp]
+\centering\small
+\caption{The two planes have completely different hardware requirements.}
+\label{tab:workload:planes}
+\begin{tabularx}{\textwidth}{@{}lLL@{}}
+\toprule
+ & \textbf{Data plane (audio)} & \textbf{Control plane (intent)} \\
+\midrule
+Rate            & \qty{93.75}{\Hz} frames, \qty{48}{\kHz} samples & once per utterance (seconds to minutes apart) \\
+Deadline        & hard: \qty{10.667}{\ms} per frame, every frame & soft: a few hundred milliseconds feels instant \\
+Dominant cost   & memory for per-bin state; divisions and transcendental functions & the sentence encoder (\num{e8}--\num{e9} operations per utterance) \\
+Right metric    & energy per frame, area, latency & energy per inference, model size \\
+Thesis code     & \file{src/intent_se/audio/} & \file{src/intent_se/nlp/}, \file{src/intent_se/control/} \\
+Hardware style  & fixed-function streaming datapath & small accelerator, or software on a CPU or phone \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{The frame budget}\label{sec:workload:budget}
+
+The hop length $H$ fixes how often a frame must be produced. With
+$f_s=\qty{48}{\kHz}$ and $H=512$ (\file{src/intent_se/config.py}):
+\begin{equation}
+  f_\text{frame} = \frac{f_s}{H} = \qty{93.75}{\Hz},
+  \qquad
+  T_\text{frame} = \frac{1}{f_\text{frame}} = \qty{10.667}{\ms}.
+  \label{eq:workload:frame}
+\end{equation}
+A chip running at clock frequency $f_\text{clk}$ therefore has
+$N_\text{cyc}=f_\text{clk}\,T_\text{frame}$ clock cycles to finish each frame
+(\cref{tab:workload:cycles}). That cycle count is the most important number in
+Phase~2. It tells you how much hardware you can \emph{share}: if a frame needs
+\num{100000} operations and you have \num{1000000} cycles, a single arithmetic
+unit can do everything, ten times over.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Clock cycles available per frame (measured frame period).}
+\label{tab:workload:cycles}
+\begin{tabular}{@{}rr@{}}
+\toprule
+$f_\text{clk}$ & cycles per frame \\
+\midrule
+\qty{100}{\MHz} & \num{1066667} \\
+\qty{50}{\MHz}  & \num{533333} \\
+\qty{10}{\MHz}  & \num{106667} \\
+\qty{1}{\MHz}   & \num{10667} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{conceptbox}{Throughput is easy; energy is the problem}
+The thesis code already runs in about \qty{0.2}{\ms} per frame in Python on an
+ordinary computer (measured: real-time factor $\approx 0.02$). Speed is not the
+challenge. The challenge is doing the same work in a hearing-aid power budget.
+Dynamic power scales as $\alpha C V^2 f$~\cite{chandrakasan1992lowpower}, so the
+winning strategy is usually to run \emph{slowly} and at low voltage, and to touch
+memory as little as possible. Keep that in mind whenever this guide asks
+\enquote{how few cycles can we use?}: the real question is \enquote{how little
+energy per frame?}
+\end{conceptbox}
+
+% =========================================================================
+\section{Operation inventory of the data plane}\label{sec:workload:ops}
+
+\Cref{tab:workload:ops} walks through one frame of the data plane, stage by
+stage, in the order the code runs it. The per-bin counts come from reading the
+code as written, with no algebraic simplification yet. Treat them as estimates
+accurate to within a few operations. Two things stand out. First, \emph{every}
+stage after the FFT is per-bin and independent across bins, apart from the
+5-tap frequency smoothing. That makes it ideal for a streaming pipeline that
+processes one bin per clock cycle. Second, the expensive operations are
+divisions (12 per bin) and two transcendental functions, not
+multiplications.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Per-bin operations per frame, counted from the code (estimate).
+Columns: multiplications, additions/subtractions, divisions, comparisons
+(including \code{min}, \code{max}, \code{clip}), and transcendental functions.
+Line numbers refer to the thesis repository.}
+\label{tab:workload:ops}
+\begin{tabularx}{\textwidth}{@{}Ll*{5}{c}@{}}
+\toprule
+Stage & Source & $\times$ & $\pm$ & $\div$ & cmp & exp/pow \\
+\midrule
+Power spectrum $|X_k|^2$ & \file{pipeline.py:179} & 2 & 1 & -- & -- & -- \\
+Frequency smoothing (5 taps) & \file{imcra.py:117} & 5 & 4 & -- & -- & -- \\
+Recursive smoothing $S$ & \file{imcra.py:118} & 2 & 1 & -- & -- & -- \\
+Minimum tracker 1 & \file{imcra.py:40-51} & -- & -- & -- & 9 & -- \\
+$\gamma_\text{min}$, $\zeta$ (shared denominator) & \file{imcra.py:121-123} & 1 & -- & 2 & 1 & -- \\
+Noise-only indicator & \file{imcra.py:126} & -- & -- & -- & 2 & -- \\
+Second smoothing $\tilde S_f$ & \file{imcra.py:129-131} & 6 & 8 & 1 & 1 & -- \\
+Recursive smoothing $\tilde S$ & \file{imcra.py:133} & 2 & 1 & -- & -- & -- \\
+Minimum tracker 2 & \file{imcra.py:134} & -- & -- & -- & 9 & -- \\
+$\tilde\gamma_\text{min}$, $\tilde\zeta$ (shared denominator) & \file{imcra.py:136-138} & 1 & -- & 2 & 1 & -- \\
+Speech-absence probability $q$ & \file{imcra.py:141-146} & 1 & 1 & -- & 6 & -- \\
+A posteriori SNR $\gamma$, $\nu$ & \file{imcra.py:149-152} & 1 & 1 & 2 & 1 & -- \\
+Likelihood ratio, presence prob.\ $p$ & \file{imcra.py:153-154} & 2 & 3 & 2 & 2 & exp \\
+Noise PSD update $\lambda_d$ & \file{imcra.py:159-164} & 4 & 3 & -- & 1 & -- \\
+Wiener: $\gamma$, decision-directed $\xi$ & \file{wiener.py:89-98} & 2 & 2 & 2 & 3 & -- \\
+Wiener: gain, floor, tilt, clip & \file{wiener.py:102-112} & 2 & 1 & 1 & 3 & pow (+$10^x$) \\
+DD memory, apply gain & \file{wiener.py:115}, \file{pipeline.py:196} & 4 & -- & -- & -- & -- \\
+\midrule
+\textbf{Total per bin} & & \textbf{35} & \textbf{26} & \textbf{12} & \textbf{39} & \textbf{2 (+1)} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Adding the transforms gives a per-frame total (\cref{tab:workload:frameops}).
+The real 2048-point FFT can be computed as a 1024-point complex FFT plus a
+post-processing pass. A radix-2 complex FFT of size $N$ needs
+$\frac{N}{2}\log_2 N = \num{5120}$ butterflies for $N=1024$, and each butterfly
+is roughly 10 real operations~\cite{cooley1965fft,oppenheim2010dtsp}.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Operations per frame and per second (estimate).}
+\label{tab:workload:frameops}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Block & ops per frame & share \\
+\midrule
+Forward real FFT (2048 points) & $\approx\num{56000}$ & 25\,\% \\
+Inverse real FFT (2048 points) & $\approx\num{56000}$ & 25\,\% \\
+Analysis window, synthesis window, overlap-add & $\approx\num{3000}$ & 1\,\% \\
+Per-bin processing ($1025 \times \approx 112$) & $\approx\num{115000}$ & 50\,\% \\
+\midrule
+\textbf{Total} & $\boldsymbol{\approx\num{230000}}$ & \\
+\textbf{Per second} (${}\times\qty{93.75}{\Hz}$) & $\boldsymbol{\approx\num{21e6}}$ & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{whybox}[What the inventory tells you]
+At \qty{100}{\MHz} you have \num{1066667} cycles for roughly \num{230000}
+operations, so throughput is not the constraint. Two architectures bracket the
+design space you will explore in \cref{ch:rtl} (both estimates):
+\begin{itemize}
+  \item \textbf{Fast and lean.} One radix-2 butterfly per cycle plus a fully
+  pipelined per-bin unit (one bin per cycle, initiation interval 1) needs about
+  $2\times(\num{5120}+512)+1025+\text{overhead}\approx\num{12500}$ cycles per
+  frame. That meets the deadline at only $\approx\qty{1.2}{\MHz}$.
+  \item \textbf{Fully folded.} Keep the single-butterfly FFT, but process the
+  bins with one shared arithmetic unit doing about one operation per cycle
+  (about 100 cycles per bin). That needs $\approx\num{115000}$ cycles per frame,
+  so $\approx\qty{11}{\MHz}$.
+\end{itemize}
+Hypothesis H4 (\cref{ch:overview}) says that the shared-resource design meets
+the deadline at \qty{5}{\MHz} or less. The interesting research question is which
+point between these extremes gives the lowest \emph{energy per frame}.
+\end{whybox}
+
+% =========================================================================
+\section{Nonlinear functions: where the real hardware cost is}\label{sec:workload:nonlinear}
+
+In Python, a division or a \code{**} costs about the same as an addition. In
+hardware they are in different leagues. A multiplier maps to one FPGA DSP slice.
+A divider, an \code{exp} or a \code{pow} is either a long iterative circuit or a
+lookup table plus arithmetic (\cref{ch:primer}). \Cref{tab:workload:nonlinear}
+lists every nonlinear operation in the data plane and what you will replace it
+with.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Nonlinear operations per bin per frame and their hardware replacements.}
+\label{tab:workload:nonlinear}
+\begin{tabularx}{\textwidth}{@{}lcLL@{}}
+\toprule
+Operation & Count & Where & Hardware replacement \\
+\midrule
+Division & 12 & 9 in IMCRA, 3 in Wiener & Only 9 distinct denominators, so share reciprocals (O4). Caching $H=\xi/(1+\xi)$ (O3) removes one more. Log domain turns most of them into subtractions (O5). \\
+$(\xi/(1+\xi))^{\beta}$ & 1 & \file{wiener.py:102} & Gain lookup table indexed by $\xi$ in dB, rebuilt by the control plane when $\beta$ changes (O1). The datapath never computes \code{pow}. \\
+$e^{-\nu}$ & 1 & \file{imcra.py:153} & Small LUT or piecewise-linear approximation over $\nu\in[0,16]$ (O7), or remove it entirely with the log-domain rewrite below. \\
+$10^{\text{tilt}\cdot f/20}$ & 1 & \file{wiener.py:110} & A geometric sequence across bins: one multiply per bin by a ratio $r$ the control plane writes (O2). \\
+$\min$ over 9 values & 2 & minimum trackers & Comparators. Values can be stored in log domain with few bits (O5). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{conceptbox}{An example of an algebraic rewrite for hardware}
+The speech-presence probability (\file{imcra.py:152-154}) is
+\begin{equation}
+  p = \frac{1}{1+\dfrac{q}{1-q}\,(1+\xi)\,e^{-\nu}},
+  \qquad \nu = \gamma\,\frac{\xi}{1+\xi}.
+\end{equation}
+As written, that is three divisions and an exponential. Take logarithms of the
+ratio in the denominator and it becomes exactly
+\begin{equation}
+  p = \sigma\!\Big(\nu - \ln(1+\xi) - \operatorname{logit}(q)\Big),
+  \qquad \sigma(z)=\frac{1}{1+e^{-z}},\quad
+  \operatorname{logit}(q) = \ln\frac{q}{1-q}.
+  \label{eq:workload:sigmoid}
+\end{equation}
+In hardware, $\ln(1+\xi)$ is a small table indexed by $\xi$ in dB. Conveniently,
+that is the same index as the gain LUT. $\operatorname{logit}(q)$ is a small
+table over $q$, and $\sigma$ is one more small table. Three divisions and an
+\code{exp} become three table lookups and two additions. The rewrite is exact in
+real arithmetic. Whether it survives quantisation is precisely the kind of
+question Phase~1 answers (\cref{ch:codesign}). One edge case: $q=0$ means
+$\operatorname{logit}(q)=-\infty$ and $p=1$, which has to be handled explicitly.
+\end{conceptbox}
+
+% =========================================================================
+\section{Memory: the dominant cost}\label{sec:workload:memory}
+
+The recursive estimators carry state from one frame to the next. Introspecting
+a running \code{SpeechEnhancer} gives the inventory in
+\cref{tab:workload:state} (measured).
+
+\begin{table}[htbp]
+\centering\small
+\caption{Arrays that persist between frames (measured by introspection).}
+\label{tab:workload:state}
+\begin{tabularx}{\textwidth}{@{}llrL@{}}
+\toprule
+Array & Shape & words/bin & Role \\
+\midrule
+\code{\_tracker.\_store}         & $8\times1025$ & 8 & subwindow minima, tracker 1 \\
+\code{\_tracker.\_running}       & $1025$ & 1 & running minimum, tracker 1 \\
+\code{\_tracker\_tilde.\_store}  & $8\times1025$ & 8 & subwindow minima, tracker 2 \\
+\code{\_tracker\_tilde.\_running}& $1025$ & 1 & running minimum, tracker 2 \\
+\code{\_s}, \code{\_s\_tilde}    & $1025$ each & 2 & smoothed periodograms $S$, $\tilde S$ \\
+\code{\_lambda\_d}               & $1025$ & 1 & noise PSD estimate \\
+\code{\_prev\_clean\_power}, \code{\_xi} & $1025$ each & 2 & Wiener decision-directed memory \\
+\code{\_norm\_freq}              & $1025$ & (1) & constant ramp for tilt --- ROM or computed, not state \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Mutable state}} & \textbf{23} & $23\times1025=\num{23575}$ words \\
+\midrule
+\code{window}, \code{\_in\_buffer}, \code{\_out\_buffer} & $3\times1024$ & & window ROM, input and overlap-add buffers \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar stacked, width=0.92\textwidth, height=34mm,
+  bar width=7mm, xmin=0, xmax=24,
+  ytick=\empty, xlabel={words per bin (measured)},
+  xlabel style={font=\sffamily\footnotesize}, tick label style={font=\sffamily\footnotesize},
+  legend style={at={(0.5,1.05)},anchor=south,legend columns=-1,font=\sffamily\scriptsize,draw=none},
+  axis line style={draw=conceptc}, enlarge y limits=0.6,
+]
+\addplot[fill=pitc!70,draw=white] coordinates {(16,0)};
+\addplot[fill=pitc!35,draw=white] coordinates {(2,0)};
+\addplot[fill=brand!60,draw=white] coordinates {(3,0)};
+\addplot[fill=whyc!60,draw=white] coordinates {(2,0)};
+\legend{tracker subwindow minima (16),tracker running minima (2),{IMCRA $S,\tilde S,\lambda_d$ (3)},Wiener memory (2)}
+\end{axis}
+\end{tikzpicture}
+\caption{Where the 23 words of per-bin state go: 18 of them are inside the two
+minimum trackers.}
+\label{fig:workload:state}
+\end{figure}
+
+At \num{23575} words this is \qty{46.0}{\kibi\byte} at 16~bits,
+\qty{69.1}{\kibi\byte} at 24~bits and \qty{92.1}{\kibi\byte} at 32~bits (measured).
+That is a lot of on-chip memory for a hearing aid. Reading and writing SRAM also
+typically costs more energy than the arithmetic done on the data, so memory is
+likely to dominate both area and energy. Three observations shape Phase~1:
+
+\begin{enumerate}
+  \item \textbf{The trackers are the target.} 18 of the 23 words per bin hold
+  minima. A minimum is unchanged by any monotone transform, so the trackers can
+  store coarse logarithmic values (O5). As an illustration (not yet a result):
+  storing the 18 tracker words at 8~bits and the other 5 at 16~bits gives
+  $18\times8+5\times16=224$ bits per bin, against $23\times24=552$. That is a
+  2.5$\times$ reduction before you change anything else.
+  \item \textbf{The number of bins multiplies everything.} Removing the 2$\times$
+  zero padding (O6) halves the bins from 1025 to 513. Moving to \qty{16}{\kHz}
+  with a 128-sample window leaves 65 bins (\cref{sec:workload:latency}). With
+  the 224-bit layout above, 65 bins need about \qty{1.8}{\kibi\byte} in total.
+  \item \textbf{Memory \emph{accesses} matter as much as memory size.} As
+  written, each tracker reads all 9 stored values for every bin in every frame
+  (\file{imcra.py:51}), even though the 8 subwindow minima only change once every
+  $V=15$ frames. If you cache their minimum in one extra word, the per-frame
+  reads drop to 2 per tracker. The full 8-word scan is then needed only when a
+  slot is overwritten. That is about $2+8/15\approx2.5$ reads per frame instead
+  of 9, paid for with 1 extra word per bin per tracker. This kind of trade
+  (slightly more storage for far fewer accesses) appears constantly in low-power
+  design.
+\end{enumerate}
+
+\begin{tipbox}[Pre-roll needs no buffer]
+The thesis stores 5 whole pre-roll frames and then takes their per-bin minimum
+(\file{imcra.py}, \code{seed}). Since only the minimum is used, hardware can keep
+a running minimum in the $\lambda_d$ state memory that is about to be seeded
+anyway. That costs 0 extra words instead of $5\times1025$.
+\end{tipbox}
+
+% =========================================================================
+\section{Latency anatomy}\label{sec:workload:latency}
+
+\Cref{fig:workload:latency} shows why every sample is delayed by exactly one
+window length. A block of 512 samples must be fully captured before its frame can
+be analysed. The overlap-add output for that block is only complete once the
+\emph{next} frame has been added in. The total is 1024 samples, or
+\qty{21.33}{\ms} at \qty{48}{\kHz} (measured), before any converter or operating
+system buffering. Hearing-aid research generally treats total delays above
+roughly \qty{10}{\ms} as problematic, and open fittings are less tolerant still,
+because the direct and processed sound interfere and cause comb
+filtering~\cite{stone1999delay,stone2008delay}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\sffamily\scriptsize,x=6mm,y=7mm]
+  \draw[-{Stealth},conceptc] (0,0) -- (21,0) node[right]{time};
+  \foreach \t/\l in {0/0,5/10.67,10/21.33,15/32}{
+    \draw[conceptc] (\t,0.1) -- (\t,-0.1) node[below]{\l\,ms};}
+  % input blocks
+  \node[anchor=east] at (-0.2,2.2) {input};
+  \draw[fill=brand!25,draw=brand] (0,1.9) rectangle (5,2.5) node[midway]{block $k{-}1$};
+  \draw[fill=brand!10,draw=brand] (5,1.9) rectangle (10,2.5) node[midway]{block $k$};
+  \draw[fill=brand!5,draw=brand,dashed] (10,1.9) rectangle (15,2.5) node[midway]{block $k{+}1$};
+  % processing
+  \node[anchor=east] at (-0.2,1.15) {process};
+  \draw[fill=pitc!20,draw=pitc] (10,0.9) rectangle (11.3,1.4);
+  \node[anchor=west,text=pitc] at (11.4,1.15) {frame $[k{-}1,k]$: FFT, gains, IFFT, OLA};
+  % output
+  \node[anchor=east] at (-0.2,3.2) {output};
+  \draw[fill=donec!25,draw=donec] (10,2.9) rectangle (15,3.5) node[midway]{block $k{-}1$ (enhanced)};
+  \draw[{Stealth}-{Stealth},pitc,line width=0.7pt] (0,3.9) -- node[above]{algorithmic latency = 1024 samples = 21.33 ms} (10,3.9);
+\end{tikzpicture}
+\caption{Why the thesis pipeline delays every sample by one full window. Block
+$k-1$ cannot leave until block $k$ has arrived, because its overlap-add output
+needs the next frame. Processing time, drawn short here, adds to this.}
+\label{fig:workload:latency}
+\end{figure}
+
+For a frame-based design with 50\,\% overlap, algorithmic latency equals the
+window length. Latency is therefore a design variable you can trade against
+frequency resolution and memory (\cref{tab:workload:configs}, measured state
+sizes). This is research question RQ2.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Alternative frame configurations (no zero padding, hop = window/2).}
+\label{tab:workload:configs}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$f_s$ & window & bins & latency & frame rate & state (words) \\
+\midrule
+\qty{48}{\kHz} & 2048 FFT$^\ast$ & 1025 & \qty{21.33}{\ms} & \qty{93.75}{\Hz} & \num{23575} \\
+\qty{48}{\kHz} & 1024 & 513 & \qty{21.33}{\ms} & \qty{93.75}{\Hz} & \num{11799} \\
+\qty{48}{\kHz} & 512  & 257 & \qty{10.67}{\ms} & \qty{187.5}{\Hz} & \num{5911} \\
+\qty{16}{\kHz} & 256  & 129 & \qty{16.00}{\ms} & \qty{125}{\Hz} & \num{2967} \\
+\qty{16}{\kHz} & 128  & 65  & \qty{8.00}{\ms}  & \qty{250}{\Hz} & \num{1495} \\
+\qty{16}{\kHz} & 64   & 33  & \qty{4.00}{\ms}  & \qty{500}{\Hz} & \num{759} \\
+\bottomrule
+\multicolumn{6}{@{}l}{\footnotesize $^\ast$ The thesis configuration: 1024-sample window zero-padded to 2048.}
+\end{tabular}
+\end{table}
+
+\begin{pitfallbox}[Time constants are defined in frames]
+IMCRA's smoothing factors ($\alpha_s=0.9$, $\alpha_d=0.85$), the
+decision-directed factor (0.98) and the minimum-search window ($D=U\times V=120$
+frames, about \qty{1.28}{\s}) are all expressed \emph{per frame}. If you halve the
+hop and keep these values, every estimator suddenly adapts twice as fast. A
+frame-configuration study that forgets this compares different algorithms, not
+different frame sizes. To keep the time constants fixed when the hop changes
+from $H$ to $H'$, rescale them: $\alpha' = \alpha^{H'/H}$, and $D' = D\,H/H'$
+frames. \Cref{ch:codesign} builds this into the sweep.
+\end{pitfallbox}
+
+% =========================================================================
+\section{The control plane}\label{sec:workload:control}
+
+The intent path runs rarely, but each run is large (\cref{tab:workload:control}).
+Almost all of the cost is in the sentence encoder. The classifier and severity
+heads are tiny matrix--vector products. This is a direct consequence of your
+thesis finding that the classes are linearly separable in the embedding space.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Control-plane cost per utterance. Encoder figures are estimates
+($2\times$ non-embedding parameters $\times$ about 14 tokens; the complaint
+sentences average 7.8 words). Head figures are exact from the model shapes.}
+\label{tab:workload:control}
+\begin{tabularx}{\textwidth}{@{}lrlL@{}}
+\toprule
+Component & Parameters & Compute per utterance & Weights (fp32 / int8) \\
+\midrule
+\code{all-mpnet-base-v2}~\cite{song2020mpnet,reimers2019sbert} & $\approx$110\,M & $\approx$2.4\,GFLOP & $\approx$440\,MB / $\approx$110\,MB \\
+\code{all-MiniLM-L6-v2}~\cite{wang2020minilm} & $\approx$22.7\,M & $\approx$0.3\,GFLOP & $\approx$90\,MB / $\approx$23\,MB \\
+\midrule
+Linear SVC head (one-vs-one) & $15\times768$ & \num{11520} MAC + voting & \qty{45}{\kibi\byte} / \qty{11.25}{\kibi\byte} \\
+Logistic regression head & $6\times768$ & \num{4608} MAC + argmax & \qty{18}{\kibi\byte} / \qty{4.5}{\kibi\byte} \\
+Ridge severity head & $768$ & 768 MAC + clip & \qty{3}{\kibi\byte} / \qty{0.75}{\kibi\byte} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{whybox}[A detail that matters: the selected classifier is one-vs-one]
+The thesis selected \code{SVC(kernel="linear", probability=True)}
+(\file{src/intent_se/nlp/classifier.py}). scikit-learn's \code{SVC} trains one
+binary classifier for \emph{every pair} of classes: 15 hyperplanes for 6 classes,
+so 15 rows rather than 6. Its probability output, which the confidence gate
+uses, comes from Platt scaling followed by an iterative pairwise-coupling
+solve~\cite{platt1999probabilistic,wu2004pairwise}. That is awkward to put in
+hardware. Logistic regression tied the SVM on cross-validated macro-F1 (0.964).
+It needs 2.5$\times$ fewer multiply--accumulates, and its confidence is simply
+its largest score. The thesis broke the tie on generalisation, which was right
+for a laptop. On a chip, the tie may break the other way. Phase~1 measures this
+(opportunity O9).
+\end{whybox}
+
+% =========================================================================
+\section{Decisions that flip under hardware constraints}\label{sec:workload:flips}
+
+Several thesis decisions were correct for a laptop proof of concept but should
+be revisited for hardware (\cref{tab:workload:flips}). Explaining these flips
+clearly is one of the most valuable things you can say in an interview, because
+it shows you understand that \enquote{optimal} depends on the cost model.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Thesis decisions to revisit, and where in this guide each is tested.}
+\label{tab:workload:flips}
+\begin{tabularx}{\textwidth}{@{}LLLl@{}}
+\toprule
+Thesis decision & Thesis reason & Under hardware constraints & Tested in \\
+\midrule
+mpnet (110\,M) over MiniLM & \enquote{Inference speed is not a bottleneck} & The encoder is the dominant control-plane cost & RQ4, \cref{ch:mlaccel} \\
+2$\times$ zero padding (2048-pt FFT) & Smoother gain curves & Doubles FFT work and per-bin state & H2, \cref{ch:codesign} \\
+\qty{48}{\kHz}, 1024 window & Soundcard block size, frequency resolution & \qty{21.33}{\ms} latency, 1025 bins of state & RQ2, \cref{ch:codesign} \\
+float64 everywhere & Free in Python & Word length sets area, energy and memory & RQ1, \cref{ch:codesign} \\
+Linear SVM (one-vs-one, Platt) & Best val$\to$test generalisation & LR ties on F1, needs 2.5$\times$ fewer MACs and has a simple confidence & H3, \cref{ch:codesign,ch:mlaccel} \\
+Tilt computed per bin per frame & Simple code & Precompute at control rate (O2) & \cref{ch:codesign,ch:rtl} \\
+Store 5 pre-roll frames & Simple code & Running minimum in place, no buffer & \cref{ch:rtl} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Summary of hardware opportunities}\label{sec:workload:opportunities}
+
+The rest of the guide refers to these opportunities by label
+(\cref{tab:workload:opps}). Each one is a hypothesis about cost and accuracy,
+not a guaranteed win. Phase~1 measures the accuracy side and Phases~2--5
+measure the cost side.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Hardware opportunities found in the thesis code.}
+\label{tab:workload:opps}
+\begin{tabularx}{\textwidth}{@{}lLLl@{}}
+\toprule
+ID & Idea & What it saves & Validated in \\
+\midrule
+O1 & Gain LUT $G(\xi_\text{dB})=\max\big((\xi/(1+\xi))^\beta,G_\text{floor}\big)$, rebuilt by the control plane, double-buffered & a \code{pow} and a division per bin; turns the NLP$\to$DSP interface into a table write & \cref{ch:codesign,ch:rtl} \\
+O2 & Tilt as a geometric accumulator $g_k=g_\text{out}\,r^k$, $r=10^{\text{tilt}/(20(K-1))}$ & a $10^x$ per bin & \cref{ch:codesign,ch:rtl} \\
+O3 & Cache $H=\xi/(1+\xi)$ from the Wiener stage for next frame's IMCRA & a reciprocal per bin & \cref{ch:codesign} \\
+O4 & Share reciprocals across the 9 distinct denominators; LUT seed + Newton--Raphson & 3 of 12 divisions, then cheap reciprocals & \cref{ch:codesign,ch:rtl} \\
+O5 & Log-domain values in the trackers and SNR comparisons & bits in 18 of 23 state words; divisions become subtractions & \cref{ch:codesign} \\
+O6 & Remove the 2$\times$ zero padding & half the FFT work and half the state & \cref{ch:codesign} \\
+O7 & $e^{-\nu}$ by LUT or piecewise-linear (or the sigmoid rewrite, \cref{eq:workload:sigmoid}) & an \code{exp} per bin & \cref{ch:codesign} \\
+O8 & Block-floating-point FFT and power computation & word length in the FFT & \cref{ch:codesign,ch:rtl} \\
+O9 & Logistic-regression or margin-based confidence; int8 head with Ridge folded in as a 7th row & 2.5$\times$ fewer MACs; no iterative probability solve & \cref{ch:codesign,ch:mlaccel} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Do it yourself}\label{sec:workload:diy}
+
+\begin{stepbox}[label=st:workload:reproduce]{Reproduce this chapter's measurements}
+From the root of the thesis repository run:
+\begin{lstlisting}[style=shell]
+PYTHONPATH=src python docs/research_guide/scripts/measure_workload.py
+\end{lstlisting}
+\textbf{Check:} the output reports 23 mutable words per bin (18 in the trackers),
+\num{23575} words of state, a frame period of \qty{10.667}{\ms} and a latency of
+\qty{21.333}{\ms}. These numbers must match \cref{app:factsheet} exactly. The
+Python time per frame varies from machine to machine.
+
+\textbf{Effort:} 15 minutes.
+\end{stepbox}
+
+\begin{stepbox}[label=st:workload:opcount]{Turn the operation estimate into a measurement (optional)}
+\Cref{tab:workload:ops} was counted by hand. You can count automatically
+instead. Wrap the numpy arrays inside \code{IMCRA.update} and
+\code{ParametricWienerFilter.compute\_gain} in a thin \code{ndarray} subclass
+whose \code{\_\_array\_ufunc\_\_} increments a counter per ufunc
+(\code{multiply}, \code{divide}, \code{minimum}, \code{exp}, \ldots) by the
+number of elements, then process one frame. Divide the counts by 1025 to get
+per-bin numbers.
+
+\textbf{Check:} your divisions per bin equal 12 and your \code{exp}/\code{power}
+calls equal 2. If not, find the discrepancy. It will teach you something about
+the code.
+
+\textbf{Effort:} 2--3 hours. Put the result in your lab notebook. It is a good
+first entry.
+\end{stepbox}
+
+\begin{donebox}[You are ready for the project chapters when]
+\begin{checklist}
+  \item You can explain, without notes, why memory rather than arithmetic speed
+        is the main hardware problem for this system.
+  \item You can name the two most expensive nonlinear operations per bin and how
+        each will be replaced.
+  \item You know where the \qty{21.33}{\ms} of latency comes from and what
+        changing the window does to latency, memory and IMCRA time constants.
+  \item You have reproduced the measured numbers on your own machine.
+\end{checklist}
+\end{donebox}

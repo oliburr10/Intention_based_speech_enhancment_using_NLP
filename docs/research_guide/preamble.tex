@@ -1,0 +1,209 @@
+% =========================================================================
+%  preamble.tex -- packages, colours, boxes and macros for the guide.
+%  Chapter files may use ONLY what is defined or loaded here.
+% =========================================================================
+
+% ---- Encoding and fonts -------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{libertinus}          % Libertinus serif text + math
+\usepackage[scaled=0.95]{sourcesanspro}
+\usepackage[varqu,varl,scaled=0.92]{zi4}  % Inconsolata for code
+\usepackage{textcomp}
+\usepackage[final]{microtype}
+
+% ---- Page layout --------------------------------------------------------
+\usepackage[a4paper,inner=27mm,outer=24mm,top=26mm,bottom=28mm,headsep=9mm]{geometry}
+\usepackage[headsepline=0.4pt,footsepline=false]{scrlayer-scrpage}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\ohead{\small\headmark}
+\ofoot*{\small\pagemark}
+\automark[section]{chapter}
+\setlength{\parskip}{0.45\baselineskip plus 2pt minus 1pt}
+\setlength{\parindent}{0pt}
+\RedeclareSectionCommand[beforeskip=-1.2\baselineskip,afterskip=0.35\baselineskip]{section}
+\RedeclareSectionCommand[beforeskip=-1.0\baselineskip,afterskip=0.25\baselineskip]{subsection}
+\RedeclareSectionCommand[beforeskip=-0.8\baselineskip,afterskip=0.2\baselineskip]{subsubsection}
+\setcounter{secnumdepth}{\subsectionnumdepth}
+\setcounter{tocdepth}{\sectiontocdepth}
+
+% ---- Colours ------------------------------------------------------------
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{brand}{HTML}{1F4E79}      % deep blue -- headings, links
+\definecolor{brandlight}{HTML}{E8F0F8}
+\definecolor{stepc}{HTML}{1F4E79}
+\definecolor{donec}{HTML}{2E7D32}
+\definecolor{tipc}{HTML}{0277BD}
+\definecolor{pitc}{HTML}{C62828}
+\definecolor{conceptc}{HTML}{546E7A}
+\definecolor{whyc}{HTML}{00796B}
+\definecolor{rqc}{HTML}{6A1B9A}
+\definecolor{readc}{HTML}{8D6E63}
+\definecolor{codebg}{HTML}{F6F8FA}
+\definecolor{codeframe}{HTML}{D0D7DE}
+\definecolor{codekw}{HTML}{0B3D91}
+\definecolor{codecomment}{HTML}{6A737D}
+\definecolor{codestring}{HTML}{A31515}
+
+\addtokomafont{disposition}{\color{brand}}
+\addtokomafont{chapterentry}{\color{brand}}
+\addtokomafont{partentry}{\color{brand}}
+
+% ---- Maths, units, tables -----------------------------------------------
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{siunitx}
+\sisetup{group-separator={,},group-minimum-digits=4,range-phrase={--},
+         per-mode=symbol,detect-all}
+\usepackage{booktabs,tabularx,multirow,array,longtable,xltabular}
+\renewcommand{\arraystretch}{1.18}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\usepackage{caption}
+\captionsetup{font=small,labelfont={bf,color=brand},format=plain,skip=6pt}
+\usepackage{float}
+
+% ---- Lists --------------------------------------------------------------
+\usepackage{enumitem}
+\setlist{itemsep=2pt,topsep=3pt,parsep=0pt,partopsep=0pt}
+% Checklist: \begin{checklist} \item Do this \end{checklist}
+\newlist{checklist}{itemize}{2}
+\setlist[checklist]{label=$\square$,leftmargin=1.6em,itemsep=2pt,topsep=3pt}
+
+% ---- Graphics -----------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.misc,fit,
+                backgrounds,calc,decorations.pathreplacing,matrix,chains,shadows}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots,fillbetween}
+\usepackage{pgfgantt}
+\usepackage{fontawesome5}
+
+% ---- Code listings ------------------------------------------------------
+% ASCII ONLY inside listings (pdfLaTeX + listings cannot handle UTF-8 there).
+\usepackage{listings}
+\lstdefinelanguage{SystemVerilog}[]{Verilog}{%
+  morekeywords={logic,always_ff,always_comb,always_latch,typedef,enum,struct,
+    packed,unpacked,int,unsigned,signed,interface,endinterface,modport,import,
+    package,endpackage,unique,priority,localparam,genvar,generate,endgenerate,
+    assert,assume,cover,property,endproperty,bit,byte,shortint,longint,
+    automatic,function,endfunction,return,void,default,typedef,union,const,
+    foreach,inside,iff,final,timeunit,timeprecision},
+  sensitive=true}
+\lstdefinestyle{guide}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=single, rulecolor=\color{codeframe}, framerule=0.4pt,
+  framesep=4pt, xleftmargin=6pt, xrightmargin=6pt,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  showstringspaces=false, columns=fullflexible, keepspaces=true,
+  breaklines=true, breakatwhitespace=false,
+  postbreak=\mbox{\textcolor{codecomment}{$\hookrightarrow$}\space},
+  tabsize=4, upquote=true,
+  numbers=none,
+  aboveskip=6pt, belowskip=6pt,
+  captionpos=t,
+}
+\lstset{style=guide}
+\lstdefinestyle{shell}{style=guide,language=bash,
+  morekeywords={sudo,apt,pip,python,python3,git,make,cd,mkdir,export,source,
+    verilator,iverilog,yosys,vivado,docker,nix,latexmk,cocotb-config,pytest},
+}
+\lstdefinestyle{py}{style=guide,language=Python}
+\lstdefinestyle{sv}{style=guide,language=SystemVerilog}
+\lstdefinestyle{tcl}{style=guide,language=tcl}
+\lstdefinestyle{plain}{style=guide,language={}}
+\renewcommand{\lstlistingname}{Listing}
+
+% ---- Inline macros ------------------------------------------------------
+\usepackage{xurl}                       % url breaking everywhere
+% \file{src/intent_se/audio/imcra.py} -- paths, no escaping needed
+\DeclareUrlCommand\file{\urlstyle{tt}}
+% \code{x\_min} -- short code in running text (escape _ % # & $)
+\newcommand{\code}[1]{\texttt{#1}}
+% \tool{Verilator} -- names of tools/products
+\newcommand{\tool}[1]{\textsf{#1}}
+% \reg{CTRL} -- register names
+\newcommand{\reg}[1]{\textsf{\small\bfseries #1}}
+% \sig{gamma_min} -- RTL signal names (no escaping needed)
+\DeclareUrlCommand\sig{\urlstyle{tt}}
+% Week marker: \weeks{3--7}
+\newcommand{\weeks}[1]{\textsf{\small\color{brand}[Weeks #1]}}
+\newcommand{\eg}{e.g.,\ }
+\newcommand{\ie}{i.e.,\ }
+\newcommand{\etal}{et~al.}
+\newcommand{\dB}{\,dB}
+
+% ---- Bibliography -------------------------------------------------------
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=ieee,sorting=none,maxnames=4,minnames=3,
+            doi=true,url=true,isbn=false]{biblatex}
+
+% ---- Hyperlinks (load late) ---------------------------------------------
+\usepackage[hidelinks=false,colorlinks=true,linkcolor=brand,citecolor=brand,
+            urlcolor=tipc,bookmarksnumbered=true,pdfusetitle]{hyperref}
+\usepackage[capitalise,noabbrev,nameinlink]{cleveref}
+\crefname{lstlisting}{listing}{listings}
+\Crefname{lstlisting}{Listing}{Listings}
+\crefname{appendix}{appendix}{appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+
+% ---- Boxes (after cleveref, for crefname) --------------------------------------------------------------
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\tcbset{
+  guidebase/.style={enhanced,breakable,arc=1.5mm,boxrule=0.5pt,
+    left=3mm,right=3mm,top=1.6mm,bottom=1.6mm,
+    before skip=7pt,after skip=7pt,
+    fonttitle=\sffamily\bfseries\small,
+    coltitle=white},
+}
+
+% Numbered step (counter resets each chapter):
+%   \begin{stepbox}[label=st:verilator]{Install Verilator} ... \end{stepbox}
+\newtcolorbox[auto counter,number within=chapter,
+  crefname={step}{steps},Crefname={Step}{Steps}]{stepbox}[2][]{%
+  guidebase,colback=brandlight!45,colframe=stepc,colbacktitle=stepc,
+  title={\faShoePrints\enspace Step~\thetcbcounter\quad #2},#1}
+
+% Exit criteria / deliverable: \begin{donebox} ... \end{donebox}
+\newtcolorbox{donebox}[1][Done when]{%
+  guidebase,colback=donec!6,colframe=donec,colbacktitle=donec,
+  title={\faCheckCircle[regular]\enspace #1}}
+
+% Tip: \begin{tipbox} ... \end{tipbox}   (optional custom title)
+\newtcolorbox{tipbox}[1][Tip]{%
+  guidebase,colback=tipc!5,colframe=tipc,colbacktitle=tipc,
+  title={\faLightbulb[regular]\enspace #1}}
+
+% Pitfall / warning: \begin{pitfallbox} ... \end{pitfallbox}
+\newtcolorbox{pitfallbox}[1][Pitfall]{%
+  guidebase,colback=pitc!5,colframe=pitc,colbacktitle=pitc,
+  title={\faExclamationTriangle\enspace #1}}
+
+% Background concept: \begin{conceptbox}{Fixed-point numbers} ... \end{conceptbox}
+\newtcolorbox{conceptbox}[1]{%
+  guidebase,colback=conceptc!5,colframe=conceptc,colbacktitle=conceptc,
+  title={\faBook\enspace Concept: #1}}
+
+% Why it matters for THIS project: \begin{whybox} ... \end{whybox}
+\newtcolorbox{whybox}[1][Why this matters for your project]{%
+  guidebase,colback=whyc!5,colframe=whyc,colbacktitle=whyc,
+  title={\faCrosshairs\enspace #1}}
+
+% Research question / hypothesis: \begin{rqbox}{RQ1 -- Precision} ... \end{rqbox}
+\newtcolorbox{rqbox}[1]{%
+  guidebase,colback=rqc!5,colframe=rqc,colbacktitle=rqc,
+  title={\faFlask\enspace #1}}
+
+% Reading pointer: \begin{readbox} ... \end{readbox}
+\newtcolorbox{readbox}[1][Read]{%
+  guidebase,colback=readc!6,colframe=readc,colbacktitle=readc,
+  title={\faBookOpen\enspace #1}}
+

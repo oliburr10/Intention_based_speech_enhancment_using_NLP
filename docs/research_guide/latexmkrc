@@ -1,0 +1,9 @@
+# latexmk configuration for the research guide.
+$pdf_mode = 1;
+$out_dir = 'build';
+$bibtex_use = 2;          # run biber when needed
+$pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error -synctex=1 %O %S';
+@default_files = ('main.tex');
+# \include writes one .aux per included file, mirrored under $out_dir.
+use File::Path qw(make_path);
+make_path(map { "$out_dir/$_" } qw(frontmatter chapters appendices));

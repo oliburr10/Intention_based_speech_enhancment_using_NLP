@@ -1,0 +1,527 @@
+% =========================================================================
+%  core.bib -- shared references. Cite these keys from any chapter.
+%  Chapter-specific extras go in bib/chNN.bib with a "chNN:" key prefix.
+% =========================================================================
+
+% ---- The thesis itself --------------------------------------------------
+@misc{burrell2026thesis,
+  author       = {Burrell, Aron},
+  title        = {Intention-Based Speech Enhancement for Hearing Aids Using {NLP}},
+  howpublished = {BSc thesis, Technical University of Denmark (DTU), in collaboration with Oticon. Code: \url{https://github.com/oliburr10/Intention_based_speech_enhancment_using_NLP}},
+  year         = {2026},
+}
+
+% ---- Speech enhancement -------------------------------------------------
+@article{cohen2003imcra,
+  author  = {Cohen, Israel},
+  title   = {Noise Spectrum Estimation in Adverse Environments: Improved Minima Controlled Recursive Averaging},
+  journal = {IEEE Transactions on Speech and Audio Processing},
+  volume  = {11},
+  number  = {5},
+  pages   = {466--475},
+  year    = {2003},
+  doi     = {10.1109/TSA.2003.811544},
+}
+
+@article{martin2001minstat,
+  author  = {Martin, Rainer},
+  title   = {Noise Power Spectral Density Estimation Based on Optimal Smoothing and Minimum Statistics},
+  journal = {IEEE Transactions on Speech and Audio Processing},
+  volume  = {9},
+  number  = {5},
+  pages   = {504--512},
+  year    = {2001},
+  doi     = {10.1109/89.928915},
+}
+
+@article{ephraim1984mmse,
+  author  = {Ephraim, Yariv and Malah, David},
+  title   = {Speech Enhancement Using a Minimum-Mean Square Error Short-Time Spectral Amplitude Estimator},
+  journal = {IEEE Transactions on Acoustics, Speech, and Signal Processing},
+  volume  = {32},
+  number  = {6},
+  pages   = {1109--1121},
+  year    = {1984},
+  doi     = {10.1109/TASSP.1984.1164453},
+}
+
+@book{loizou2013se,
+  author    = {Loizou, Philipos C.},
+  title     = {Speech Enhancement: Theory and Practice},
+  edition   = {2},
+  publisher = {CRC Press},
+  year      = {2013},
+}
+
+@book{kates2008hearingaids,
+  author    = {Kates, James M.},
+  title     = {Digital Hearing Aids},
+  publisher = {Plural Publishing},
+  year      = {2008},
+}
+
+@article{stone1999delay,
+  author  = {Stone, Michael A. and Moore, Brian C. J.},
+  title   = {Tolerable Hearing Aid Delays. {I}. Estimation of Limits Imposed by the Auditory Path Alone Using Simulated Hearing Losses},
+  journal = {Ear and Hearing},
+  volume  = {20},
+  number  = {3},
+  pages   = {182--192},
+  year    = {1999},
+  doi     = {10.1097/00003446-199906000-00002},
+}
+
+@article{stone2008delay,
+  author  = {Stone, Michael A. and Moore, Brian C. J. and Meisenbacher, Katrin and Derleth, Ralph P.},
+  title   = {Tolerable Hearing Aid Delays. {V}. Estimation of Limits for Open Canal Fittings},
+  journal = {Ear and Hearing},
+  volume  = {29},
+  number  = {4},
+  pages   = {601--617},
+  year    = {2008},
+  doi     = {10.1097/AUD.0b013e3181734ef2},
+}
+
+% ---- Evaluation data and metrics ----------------------------------------
+@inproceedings{valentini2016voicebank,
+  author    = {Valentini-Botinhao, Cassia and Wang, Xin and Takaki, Shinji and Yamagishi, Junichi},
+  title     = {Investigating {RNN}-based Speech Enhancement Methods for Noise-Robust Text-to-Speech},
+  booktitle = {Proc. 9th ISCA Speech Synthesis Workshop (SSW9)},
+  pages     = {146--152},
+  year      = {2016},
+  doi       = {10.21437/SSW.2016-24},
+}
+
+@misc{valentini2017dataset,
+  author       = {Valentini-Botinhao, Cassia},
+  title        = {Noisy Speech Database for Training Speech Enhancement Algorithms and {TTS} Models},
+  howpublished = {University of Edinburgh DataShare},
+  year         = {2017},
+  doi          = {10.7488/ds/2117},
+}
+
+@misc{itu2001pesq,
+  author       = {{ITU-T}},
+  title        = {Recommendation {P.862}: Perceptual Evaluation of Speech Quality ({PESQ}): An Objective Method for End-to-End Speech Quality Assessment of Narrow-Band Telephone Networks and Speech Codecs},
+  howpublished = {International Telecommunication Union},
+  year         = {2001},
+}
+
+@misc{itu2007pesqwb,
+  author       = {{ITU-T}},
+  title        = {Recommendation {P.862.2}: Wideband Extension to Recommendation {P.862} for the Assessment of Wideband Telephone Networks and Speech Codecs},
+  howpublished = {International Telecommunication Union},
+  year         = {2007},
+}
+
+@article{taal2011stoi,
+  author  = {Taal, Cees H. and Hendriks, Richard C. and Heusdens, Richard and Jensen, Jesper},
+  title   = {An Algorithm for Intelligibility Prediction of Time--Frequency Weighted Noisy Speech},
+  journal = {IEEE Transactions on Audio, Speech, and Language Processing},
+  volume  = {19},
+  number  = {7},
+  pages   = {2125--2136},
+  year    = {2011},
+  doi     = {10.1109/TASL.2011.2114881},
+}
+
+@inproceedings{leroux2019sisdr,
+  author    = {Le Roux, Jonathan and Wisdom, Scott and Erdogan, Hakan and Hershey, John R.},
+  title     = {{SDR} -- Half-Baked or Well Done?},
+  booktitle = {Proc. IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  pages     = {626--630},
+  year      = {2019},
+  doi       = {10.1109/ICASSP.2019.8683855},
+}
+
+% ---- NLP ----------------------------------------------------------------
+@inproceedings{reimers2019sbert,
+  author    = {Reimers, Nils and Gurevych, Iryna},
+  title     = {Sentence-{BERT}: Sentence Embeddings using {S}iamese {BERT}-Networks},
+  booktitle = {Proc. Conference on Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)},
+  pages     = {3982--3992},
+  year      = {2019},
+  doi       = {10.18653/v1/D19-1410},
+}
+
+@inproceedings{song2020mpnet,
+  author    = {Song, Kaitao and Tan, Xu and Qin, Tao and Lu, Jianfeng and Liu, Tie-Yan},
+  title     = {{MPNet}: Masked and Permuted Pre-training for Language Understanding},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {33},
+  year      = {2020},
+}
+
+@inproceedings{wang2020minilm,
+  author    = {Wang, Wenhui and Wei, Furu and Dong, Li and Bao, Hangbo and Yang, Nan and Zhou, Ming},
+  title     = {{MiniLM}: Deep Self-Attention Distillation for Task-Agnostic Compression of Pre-Trained Transformers},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {33},
+  year      = {2020},
+}
+
+@misc{sanh2019distilbert,
+  author       = {Sanh, Victor and Debut, Lysandre and Chaumond, Julien and Wolf, Thomas},
+  title        = {{DistilBERT}, a Distilled Version of {BERT}: Smaller, Faster, Cheaper and Lighter},
+  howpublished = {arXiv:1910.01108},
+  year         = {2019},
+}
+
+@inproceedings{kim2021ibert,
+  author    = {Kim, Sehoon and Gholami, Amir and Yao, Zhewei and Mahoney, Michael W. and Keutzer, Kurt},
+  title     = {{I-BERT}: Integer-only {BERT} Quantization},
+  booktitle = {Proc. 38th International Conference on Machine Learning (ICML)},
+  series    = {PMLR},
+  volume    = {139},
+  pages     = {5506--5518},
+  year      = {2021},
+}
+
+@misc{zafrir2019q8bert,
+  author       = {Zafrir, Ofir and Boudoukh, Guy and Izsak, Peter and Wasserblat, Moshe},
+  title        = {{Q8BERT}: Quantized 8Bit {BERT}},
+  howpublished = {arXiv:1910.06188 (EMC\textsuperscript{2} Workshop at NeurIPS 2019)},
+  year         = {2019},
+}
+
+@incollection{platt1999probabilistic,
+  author    = {Platt, John C.},
+  title     = {Probabilistic Outputs for Support Vector Machines and Comparisons to Regularized Likelihood Methods},
+  booktitle = {Advances in Large Margin Classifiers},
+  publisher = {MIT Press},
+  pages     = {61--74},
+  year      = {1999},
+}
+
+@article{wu2004pairwise,
+  author  = {Wu, Ting-Fan and Lin, Chih-Jen and Weng, Ruby C.},
+  title   = {Probability Estimates for Multi-class Classification by Pairwise Coupling},
+  journal = {Journal of Machine Learning Research},
+  volume  = {5},
+  pages   = {975--1005},
+  year    = {2004},
+}
+
+% ---- Spoken language understanding / keyword spotting -------------------
+@misc{zhang2017helloedge,
+  author       = {Zhang, Yundong and Suda, Naveen and Lai, Liangzhen and Chandra, Vikas},
+  title        = {Hello Edge: Keyword Spotting on Microcontrollers},
+  howpublished = {arXiv:1711.07128},
+  year         = {2017},
+}
+
+@misc{warden2018speechcommands,
+  author       = {Warden, Pete},
+  title        = {Speech Commands: A Dataset for Limited-Vocabulary Speech Recognition},
+  howpublished = {arXiv:1804.03209},
+  year         = {2018},
+}
+
+@inproceedings{lugosch2019fsc,
+  author    = {Lugosch, Loren and Ravanelli, Mirco and Ignoto, Patrick and Tomar, Vikrant Singh and Bengio, Yoshua},
+  title     = {Speech Model Pre-Training for End-to-End Spoken Language Understanding},
+  booktitle = {Proc. Interspeech},
+  pages     = {814--818},
+  year      = {2019},
+  doi       = {10.21437/Interspeech.2019-2396},
+}
+
+@misc{banbury2021mlperftiny,
+  author       = {Banbury, Colby and Reddi, Vijay Janapa and Torelli, Peter and others},
+  title        = {{MLPerf} Tiny Benchmark},
+  howpublished = {NeurIPS Datasets and Benchmarks Track; arXiv:2106.07597},
+  year         = {2021},
+}
+
+% ---- DSP and VLSI DSP ---------------------------------------------------
+@article{cooley1965fft,
+  author  = {Cooley, James W. and Tukey, John W.},
+  title   = {An Algorithm for the Machine Calculation of Complex {F}ourier Series},
+  journal = {Mathematics of Computation},
+  volume  = {19},
+  number  = {90},
+  pages   = {297--301},
+  year    = {1965},
+  doi     = {10.1090/S0025-5718-1965-0178586-1},
+}
+
+@inproceedings{he1996r22sdf,
+  author    = {He, Shousheng and Torkelson, Mats},
+  title     = {A New Approach to Pipeline {FFT} Processor},
+  booktitle = {Proc. 10th International Parallel Processing Symposium (IPPS)},
+  pages     = {766--770},
+  year      = {1996},
+  doi       = {10.1109/IPPS.1996.508145},
+}
+
+@article{volder1959cordic,
+  author  = {Volder, Jack E.},
+  title   = {The {CORDIC} Trigonometric Computing Technique},
+  journal = {IRE Transactions on Electronic Computers},
+  volume  = {EC-8},
+  number  = {3},
+  pages   = {330--334},
+  year    = {1959},
+  doi     = {10.1109/TEC.1959.5222693},
+}
+
+@book{oppenheim2010dtsp,
+  author    = {Oppenheim, Alan V. and Schafer, Ronald W.},
+  title     = {Discrete-Time Signal Processing},
+  edition   = {3},
+  publisher = {Pearson},
+  year      = {2010},
+}
+
+@book{parhi1999vlsidsp,
+  author    = {Parhi, Keshab K.},
+  title     = {{VLSI} Digital Signal Processing Systems: Design and Implementation},
+  publisher = {Wiley},
+  year      = {1999},
+}
+
+@book{meyerbaese2014fpgadsp,
+  author    = {Meyer-Baese, Uwe},
+  title     = {Digital Signal Processing with Field Programmable Gate Arrays},
+  edition   = {4},
+  publisher = {Springer},
+  year      = {2014},
+}
+
+@book{muller2016elementary,
+  author    = {Muller, Jean-Michel},
+  title     = {Elementary Functions: Algorithms and Implementation},
+  edition   = {3},
+  publisher = {Birkh{\"a}user},
+  year      = {2016},
+}
+
+@book{widrow2008quantization,
+  author    = {Widrow, Bernard and Koll{\'a}r, Istv{\'a}n},
+  title     = {Quantization Noise: Roundoff Error in Digital Computation, Signal Processing, Control, and Communications},
+  publisher = {Cambridge University Press},
+  year      = {2008},
+}
+
+% ---- Digital design, VLSI, low power ------------------------------------
+@book{harris2021ddca,
+  author    = {Harris, Sarah L. and Harris, David},
+  title     = {Digital Design and Computer Architecture, {RISC-V} Edition},
+  publisher = {Morgan Kaufmann},
+  year      = {2021},
+}
+
+@book{weste2010cmos,
+  author    = {Weste, Neil H. E. and Harris, David Money},
+  title     = {{CMOS} {VLSI} Design: A Circuits and Systems Perspective},
+  edition   = {4},
+  publisher = {Addison-Wesley},
+  year      = {2010},
+}
+
+@book{rabaey2003digital,
+  author    = {Rabaey, Jan M. and Chandrakasan, Anantha and Nikoli{\'c}, Borivoje},
+  title     = {Digital Integrated Circuits: A Design Perspective},
+  edition   = {2},
+  publisher = {Prentice Hall},
+  year      = {2003},
+}
+
+@article{chandrakasan1992lowpower,
+  author  = {Chandrakasan, Anantha P. and Sheng, Samuel and Brodersen, Robert W.},
+  title   = {Low-Power {CMOS} Digital Design},
+  journal = {IEEE Journal of Solid-State Circuits},
+  volume  = {27},
+  number  = {4},
+  pages   = {473--484},
+  year    = {1992},
+  doi     = {10.1109/4.126534},
+}
+
+@book{sutherland2006svdesign,
+  author    = {Sutherland, Stuart and Davidmann, Simon and Flake, Peter},
+  title     = {{SystemVerilog} for Design: A Guide to Using {SystemVerilog} for Hardware Design and Modeling},
+  edition   = {2},
+  publisher = {Springer},
+  year      = {2006},
+}
+
+@inproceedings{cummings2000nonblocking,
+  author    = {Cummings, Clifford E.},
+  title     = {Nonblocking Assignments in {Verilog} Synthesis, Coding Styles That Kill!},
+  booktitle = {Synopsys Users Group Conference (SNUG)},
+  year      = {2000},
+}
+
+% ---- ML accelerators ----------------------------------------------------
+@article{kung1982systolic,
+  author  = {Kung, H. T.},
+  title   = {Why Systolic Architectures?},
+  journal = {Computer},
+  volume  = {15},
+  number  = {1},
+  pages   = {37--46},
+  year    = {1982},
+  doi     = {10.1109/MC.1982.1653825},
+}
+
+@article{sze2017efficient,
+  author  = {Sze, Vivienne and Chen, Yu-Hsin and Yang, Tien-Ju and Emer, Joel S.},
+  title   = {Efficient Processing of Deep Neural Networks: A Tutorial and Survey},
+  journal = {Proceedings of the IEEE},
+  volume  = {105},
+  number  = {12},
+  pages   = {2295--2329},
+  year    = {2017},
+  doi     = {10.1109/JPROC.2017.2761740},
+}
+
+@book{sze2020book,
+  author    = {Sze, Vivienne and Chen, Yu-Hsin and Yang, Tien-Ju and Emer, Joel S.},
+  title     = {Efficient Processing of Deep Neural Networks},
+  series    = {Synthesis Lectures on Computer Architecture},
+  publisher = {Morgan \& Claypool},
+  year      = {2020},
+  doi       = {10.2200/S01004ED1V01Y202004CAC050},
+}
+
+@inproceedings{jacob2018quantization,
+  author    = {Jacob, Benoit and Kligys, Skirmantas and Chen, Bo and Zhu, Menglong and Tang, Matthew and Howard, Andrew and Adam, Hartwig and Kalenichenko, Dmitry},
+  title     = {Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference},
+  booktitle = {Proc. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2704--2713},
+  year      = {2018},
+}
+
+@inproceedings{jouppi2017tpu,
+  author    = {Jouppi, Norman P. and Young, Cliff and Patil, Nishant and others},
+  title     = {In-Datacenter Performance Analysis of a Tensor Processing Unit},
+  booktitle = {Proc. 44th Annual International Symposium on Computer Architecture (ISCA)},
+  pages     = {1--12},
+  year      = {2017},
+  doi       = {10.1145/3079856.3080246},
+}
+
+@article{chen2017eyeriss,
+  author  = {Chen, Yu-Hsin and Krishna, Tushar and Emer, Joel S. and Sze, Vivienne},
+  title   = {Eyeriss: An Energy-Efficient Reconfigurable Accelerator for Deep Convolutional Neural Networks},
+  journal = {IEEE Journal of Solid-State Circuits},
+  volume  = {52},
+  number  = {1},
+  pages   = {127--138},
+  year    = {2017},
+  doi     = {10.1109/JSSC.2016.2616357},
+}
+
+@article{williams2009roofline,
+  author  = {Williams, Samuel and Waterman, Andrew and Patterson, David},
+  title   = {Roofline: An Insightful Visual Performance Model for Multicore Architectures},
+  journal = {Communications of the ACM},
+  volume  = {52},
+  number  = {4},
+  pages   = {65--76},
+  year    = {2009},
+  doi     = {10.1145/1498765.1498785},
+}
+
+% ---- FPGA ML frameworks -------------------------------------------------
+@article{duarte2018hls4ml,
+  author  = {Duarte, Javier and Han, Song and Harris, Philip and others},
+  title   = {Fast Inference of Deep Neural Networks in {FPGAs} for Particle Physics},
+  journal = {Journal of Instrumentation},
+  volume  = {13},
+  number  = {07},
+  pages   = {P07027},
+  year    = {2018},
+  doi     = {10.1088/1748-0221/13/07/P07027},
+}
+
+@inproceedings{umuroglu2017finn,
+  author    = {Umuroglu, Yaman and Fraser, Nicholas J. and Gambardella, Giulio and Blott, Michaela and Leong, Philip and Jahre, Magnus and Vissers, Kees},
+  title     = {{FINN}: A Framework for Fast, Scalable Binarized Neural Network Inference},
+  booktitle = {Proc. ACM/SIGDA International Symposium on Field-Programmable Gate Arrays (FPGA)},
+  pages     = {65--74},
+  year      = {2017},
+  doi       = {10.1145/3020078.3021744},
+}
+
+@misc{brevitas,
+  author       = {Pappalardo, Alessandro and {Xilinx Research Labs}},
+  title        = {Brevitas: Neural Network Quantization in {PyTorch}},
+  howpublished = {\url{https://github.com/Xilinx/brevitas}},
+  year         = {2021},
+  doi          = {10.5281/zenodo.3333552},
+}
+
+% ---- Open-source hardware tools -----------------------------------------
+@misc{verilator,
+  author       = {Snyder, Wilson and others},
+  title        = {Verilator: Open-Source {SystemVerilog} Simulator and Lint System},
+  howpublished = {\url{https://www.veripool.org/verilator/}},
+  year         = {2025},
+}
+
+@misc{cocotb,
+  author       = {{cocotb contributors}},
+  title        = {cocotb: A Coroutine-Based Cosimulation Library for Writing {VHDL} and {Verilog} Testbenches in {Python}},
+  howpublished = {\url{https://www.cocotb.org}},
+  year         = {2025},
+}
+
+@misc{yosys,
+  author       = {Wolf, Claire and others},
+  title        = {Yosys Open {SYnthesis} Suite},
+  howpublished = {\url{https://yosyshq.net/yosys/}},
+  year         = {2025},
+}
+
+@inproceedings{ajayi2019openroad,
+  author    = {Ajayi, Tutu and Chhabria, Vidya A. and Fogaça, Mateus and others},
+  title     = {Toward an Open-Source Digital Flow: First Learnings from the {OpenROAD} Project},
+  booktitle = {Proc. 56th ACM/IEEE Design Automation Conference (DAC)},
+  year      = {2019},
+  doi       = {10.1145/3316781.3326334},
+}
+
+@inproceedings{guthaus2016openram,
+  author    = {Guthaus, Matthew R. and Stine, James E. and Ataei, Samira and Chen, Brian and Wu, Bin and Sarwar, Mehedi},
+  title     = {{OpenRAM}: An Open-Source Memory Compiler},
+  booktitle = {Proc. IEEE/ACM International Conference on Computer-Aided Design (ICCAD)},
+  year      = {2016},
+  doi       = {10.1145/2966986.2980098},
+}
+
+@misc{librelane,
+  author       = {{LibreLane contributors}},
+  title        = {{LibreLane}: An Open-Source {RTL}-to-{GDSII} Flow (successor of {OpenLane} 2)},
+  howpublished = {\url{https://github.com/librelane/librelane}},
+  year         = {2025},
+}
+
+@misc{sky130pdk,
+  author       = {{Google and SkyWater Technology}},
+  title        = {{SkyWater SKY130} Open Source Process Design Kit},
+  howpublished = {\url{https://github.com/google/skywater-pdk}},
+  year         = {2020},
+}
+
+@misc{ihpsg13g2,
+  author       = {{IHP GmbH}},
+  title        = {{IHP} Open Source {PDK} for {SG13G2} 130\,nm {BiCMOS}},
+  howpublished = {\url{https://github.com/IHP-GmbH/IHP-Open-PDK}},
+  year         = {2023},
+}
+
+@misc{tinytapeout,
+  author       = {Venn, Matt and {Tiny Tapeout contributors}},
+  title        = {Tiny Tapeout},
+  howpublished = {\url{https://tinytapeout.com}},
+  year         = {2025},
+}
+
+@misc{pynq,
+  author       = {{AMD Xilinx}},
+  title        = {{PYNQ}: {Python} Productivity for {Zynq}},
+  howpublished = {\url{http://www.pynq.io}},
+  year         = {2025},
+}

@@ -1,0 +1,137 @@
+\chapter*{How to Use This Guide}\label{ch:howto}
+\addcontentsline{toc}{chapter}{How to Use This Guide}
+\markboth{How to Use This Guide}{How to Use This Guide}
+
+\section*{The project in sixty seconds}
+
+Your thesis showed that plain language can control a real-time speech enhancer.
+A sentence such as \enquote{the background noise is unbearable} becomes an
+intent class and a severity score, and those become DSP parameter updates that
+take effect without interrupting the audio. It ran on a laptop, in 64-bit
+floating point, with a 110-million-parameter language model.
+
+This project asks the hardware version of the same question: \emph{what is the
+smallest, lowest-power hardware that can still do intent-controlled speech
+enhancement, and what does each design decision cost?} You will answer it by:
+\begin{enumerate}
+  \item turning the thesis code into a bit-exact fixed-point model;
+  \item designing the audio datapath in SystemVerilog;
+  \item verifying it against that model;
+  \item running it in real time on an FPGA, with your NLP pipeline controlling it;
+  \item going deeper on either ML acceleration or the ASIC flow.
+\end{enumerate}
+Along the way you will practise the core skills of VLSI-based DSP and ML
+hardware: fixed-point design, microarchitecture, RTL, verification, FPGA
+prototyping, and measuring area, power and latency.
+
+\section*{How the guide is organised}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+  \item[Part I --- Foundations (read first)]
+  \Cref{ch:overview} sets out the research questions, the plan and the
+  deliverables. \Cref{ch:primer} is a primer on the hardware concepts you will
+  need. Skim it now and come back to each section when a phase uses it.
+  \Cref{ch:workload} measures your thesis system as a hardware workload. It is
+  the chapter that makes everything else concrete, so do not skip it.
+  \item[Part II --- The project, step by step]
+  One chapter per phase, \cref{ch:setup} to \cref{ch:asic}. Every phase chapter
+  has the same shape:
+  \begin{enumerate}
+    \item a goal;
+    \item the inputs you need and the outputs you will produce;
+    \item a sequence of numbered \emph{steps}, each saying what to do, how to do
+          it, how you know it worked, and roughly how long it takes;
+    \item the pitfalls;
+    \item exit criteria and a checklist.
+  \end{enumerate}
+  \item[Part III --- Doing it well]
+  Evaluation methodology (\cref{ch:evaluation}), writing up and presenting
+  (\cref{ch:writeup}), and the timeline, milestones and risk register
+  (\cref{ch:plan}).
+  \item[Appendices]
+  The measured fact sheet (\cref{app:factsheet}), the hardware register map
+  (\cref{app:registers}), a command cheat sheet (\cref{app:cheatsheet}), a
+  glossary (\cref{app:glossary}), copy-paste templates for your lab notebook and
+  reports (\cref{app:templates}), and an annotated reading list
+  (\cref{app:reading}).
+\end{description}
+
+\section*{Suggested reading paths}
+
+\begin{itemize}
+  \item \textbf{\enquote{I want to start tomorrow.}} Read
+        \cref{ch:overview,ch:workload,ch:plan}, then begin \cref{ch:setup}.
+  \item \textbf{\enquote{Hardware is new to me.}} Add \cref{ch:primer}, one
+        section per evening, alongside Phase~0. Keep \cref{app:glossary} open.
+  \item \textbf{\enquote{I have less time than the full plan assumes.}}
+        \Cref{ch:plan} has cut-down versions of the project for different
+        credit loads. Decide your scope before you start Phase~1.
+\end{itemize}
+
+\section*{The boxes}
+
+The guide uses a small set of boxes consistently. This is what each one means:
+
+\begin{stepbox}[title={\faShoePrints\enspace Step~N.M\quad An action for you to take}]{}
+Numbered per chapter. It says what to do, how to do it, how to check it worked,
+and how long it usually takes. Steps are meant to be done in order.
+\end{stepbox}
+\begin{donebox}
+Exit criteria. When everything here is true, the phase is finished and its
+milestone is reached.
+\end{donebox}
+\begin{whybox}
+Connects a step or concept to your thesis and to the research questions, so you
+always know why you are doing something.
+\end{whybox}
+\begin{conceptbox}{Background theory}
+A compact explanation of a concept, usually with the one equation that matters.
+\end{conceptbox}
+\begin{rqbox}{Research question or hypothesis}
+A question the project answers, or a claim it tests.
+\end{rqbox}
+\begin{tipbox}
+Practical advice that saves time.
+\end{tipbox}
+\begin{pitfallbox}
+A mistake people really make at this point, and how to avoid it.
+\end{pitfallbox}
+\begin{readbox}
+Where to read more. Full references are in the bibliography and in
+\cref{app:reading}.
+\end{readbox}
+
+Checklists look like this; tick them in your printed copy or in your notebook:
+\begin{checklist}
+  \item Read \cref{ch:overview}.
+  \item Reproduce the measurements in \cref{ch:workload}.
+\end{checklist}
+
+\section*{Conventions}
+
+\begin{itemize}
+  \item \textbf{Measured or estimated.} Any number about the thesis system is
+        either \emph{measured} from the thesis code or marked as an
+        \emph{estimate}. Never quote an estimate as a result in your own report.
+        Measure it.
+  \item \textbf{Paths.} \file{src/intent_se/...} refers to the thesis repository.
+        Paths such as \file{golden/fixedpoint.py} or \file{rtl/bin_pipeline.sv}
+        refer to the new project repository, \file{intent-se-hw}, which you
+        create in \cref{ch:setup}.
+  \item \textbf{Weeks and effort.} Week markers such as \weeks{3--7} assume about
+        12--15 hours of work per week. Effort estimates assume you are new to
+        the tool in question. Expect the first step with any tool to take longer
+        than estimated and later steps to take less.
+  \item \textbf{Tools change.} Commands and versions were checked when the guide
+        was written, but tools move fast. When a command fails, read the tool's
+        current documentation before assuming you made a mistake. Record the tool
+        versions you actually used, as \cref{ch:evaluation} explains.
+\end{itemize}
+
+\section*{This guide is a living document}
+
+The guide is a LaTeX project inside your thesis repository
+(\file{docs/research_guide/}). Build it with \code{make} in that directory (see
+the \file{README.md} there). Edit it as the project evolves: when you change the
+plan, change the guide, and note why in your lab notebook. A plan you keep up to
+date is worth far more than a perfect one you stop reading.

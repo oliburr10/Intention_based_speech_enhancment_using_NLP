@@ -1,0 +1,128 @@
+\chapter{Fact Sheet: Measured Properties of the Thesis System}\label{app:factsheet}
+
+This appendix collects, on one page, every number about the thesis system that
+the guide relies on. \emph{Measured} values come from
+\file{docs/research_guide/scripts/measure_workload.py} run on the thesis code
+(\cref{st:workload:reproduce}). \emph{Estimates} are derived by hand from the
+code, and \cref{ch:workload} shows how. Thesis results are quoted from the
+thesis repository~\cite{burrell2026thesis}. If you change the thesis code, rerun
+the script and update this page first.
+
+\section*{Data plane}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}Lrl@{}}
+\toprule
+Quantity & Value & Kind \\
+\midrule
+Sample rate $f_s$ & \qty{48}{\kHz} & config \\
+Block = hop $H$ & 512 samples & config \\
+Window (periodic $\sqrt{\text{Hann}}$, analysis and synthesis) & 1024 samples & config \\
+FFT size (2$\times$ zero padding) & 2048 & config \\
+Frequency bins $K$ & 1025 & config \\
+Frame rate / frame period & \qty{93.75}{\Hz} / \qty{10.667}{\ms} & measured \\
+Algorithmic latency (block buffering + WOLA overlap) & 1024 samples = \qty{21.33}{\ms} & measured \\
+Cycles per frame at 100 / 50 / 10 / \qty{1}{\MHz} & \num{1066667} / \num{533333} / \num{106667} / \num{10667} & measured \\
+Mutable state per bin & 23 words & measured \\
+\quad of which inside the two minimum trackers & 18 words ($2\times(8+1)$) & measured \\
+\quad IMCRA $S$, $\tilde S$, $\lambda_d$; Wiener $|\hat S|^2_{\text{prev}}$, $\xi$ & 5 words & measured \\
+Constant per-bin data (tilt frequency ramp) & 1 word (ROM or computed) & measured \\
+Total mutable per-bin state & \num{23575} words & measured \\
+\quad at 16 / 24 / 32 bits & \qty{46.0}{\kibi\byte} / \qty{69.1}{\kibi\byte} / \qty{92.1}{\kibi\byte} & measured \\
+Other arrays (input buffer, OLA buffer, window) & $3\times1024$ words + 5-tap kernel & measured \\
+Pre-roll buffer (start-up only) & $5\times1025=\num{5125}$ words & measured \\
+Python float64 speed & $\approx\qty{0.2}{\ms}$ per frame (real-time factor $\approx0.02$; varies by machine) & measured \\
+Per-bin ops per frame: $\times$ / $\pm$ / $\div$ / cmp / transcendental & 35 / 26 / 12 / 39 / 2 (+1 for tilt) & estimate \\
+Distinct denominators among the 12 divisions & 9 & estimate \\
+Ops per frame (FFT + IFFT $\approx\num{112000}$, per-bin $\approx\num{115000}$) & $\approx\num{230000}$ & estimate \\
+Ops per second & $\approx\num{21e6}$ & estimate \\
+Minimum clock: 1 butterfly/cycle + per-bin pipeline (II = 1) & $\approx\num{12500}$ cycles/frame $\Rightarrow\approx\qty{1.2}{\MHz}$ & estimate \\
+Minimum clock: 1 butterfly/cycle + folded per-bin unit & $\approx\num{115000}$ cycles/frame $\Rightarrow\approx\qty{11}{\MHz}$ & estimate \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section*{Algorithm parameters}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}lL@{}}
+\toprule
+IMCRA~\cite{cohen2003imcra} & $\alpha_s=0.9$, $\alpha_d=0.85$, bias $B_{\min}=1.47$ (named \code{beta} in \file{imcra.py}), $\gamma_0=4.6$, $\gamma_1=3$, $\zeta_0=1.67$, $U=8$, $V=15$, $D=UV=120$ frames ($\approx\qty{1.28}{\s}$), 5-tap normalised Hann smoothing across frequency \\
+Wiener~\cite{ephraim1984mmse,loizou2013se} & $G=\max\big((\xi/(1+\xi))^\beta, G_\text{floor}\big)\cdot 10^{\text{tilt}\cdot f/20}\cdot g_\text{out}$, clipped to $[0,4]$; $\beta=1$ (range $[0.1,4]$), $G_\text{floor}=0.05$, decision-directed $\alpha=0.98$, $\xi_{\min}=\qty{-25}{\dB}$, $g_\text{out}=1$ (range $[0.1,4]$), tilt $=0$ (range $\pm\qty{12}{\dB}$) \\
+Pre-roll & first 5 frames pass through unprocessed; their per-bin minimum seeds IMCRA \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section*{Alternative frame configurations}
+
+No zero padding, hop = window/2, state = 23 words $\times$ bins (measured).
+
+\begin{center}\small
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$f_s$ & window & bins & latency & frame rate & state (words) \\
+\midrule
+\qty{48}{\kHz} & 1024 & 513 & \qty{21.33}{\ms} & \qty{93.75}{\Hz} & \num{11799} \\
+\qty{48}{\kHz} & 512  & 257 & \qty{10.67}{\ms} & \qty{187.5}{\Hz} & \num{5911} \\
+\qty{16}{\kHz} & 256  & 129 & \qty{16.00}{\ms} & \qty{125}{\Hz} & \num{2967} \\
+\qty{16}{\kHz} & 128  & 65  & \qty{8.00}{\ms}  & \qty{250}{\Hz} & \num{1495} \\
+\qty{16}{\kHz} & 64   & 33  & \qty{4.00}{\ms}  & \qty{500}{\Hz} & \num{759} \\
+\bottomrule
+\end{tabular}
+\end{center}
+When the hop changes from $H$ to $H'$, keep the time constants by using
+$\alpha'=\alpha^{H'/H}$ and $D'=D\,H/H'$ frames.
+
+\section*{Control plane}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}Lrl@{}}
+\toprule
+Quantity & Value & Kind \\
+\midrule
+Complaint dataset & 1106 sentences, 6 classes; mean 7.8 words (max 12) & measured \\
+\code{all-mpnet-base-v2}: parameters, dimension, layers & $\approx$110\,M, 768, 12 & published \\
+\code{all-MiniLM-L6-v2}: parameters, dimension, layers & $\approx$22.7\,M, 384, 6 & published \\
+Encoder compute per sentence (mpnet / MiniLM) & $\approx$2.4 / $\approx$0.3 GFLOP & estimate \\
+Encoder weights fp32 (mpnet / MiniLM) & $\approx$440 / $\approx$90\,MB & estimate \\
+Encoder weights int8 (mpnet / MiniLM) & $\approx$110 / $\approx$23\,MB & estimate \\
+Selected classifier & \code{SVC(kernel="linear", probability=True)}, one-vs-one & code \\
+\quad MACs (15 hyperplanes $\times$ 768) & \num{11520} + 15 votes & exact \\
+Logistic regression alternative (6 $\times$ 768) & \num{4608} MACs + argmax & exact \\
+Ridge severity (768) & 768 MACs + bias + clip & exact \\
+Thesis results: LinearSVM CV / test macro-F1 & 0.964 / 0.957 & thesis \\
+Thesis results: logistic regression CV macro-F1 & 0.964 & thesis \\
+Thesis results: Ridge $\alpha$, CV MAE & 0.10, 0.1002 & thesis \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section*{Script output}
+
+For reference, this is the output the guide was written against. Your Python
+timing will differ, but every other line should match exactly.
+
+\begin{lstlisting}[style=plain]
+== Frame timing ==
+fs=48000 Hz  hop=512  window=1024  n_fft=2048  bins=1025
+frame rate   = 93.7500 Hz
+frame period = 10.6667 ms
+algorithmic latency = 1024 samples = 21.333 ms (one block of buffering + one hop of WOLA overlap)
+  cycles per frame @   100 MHz =    1,066,667
+  cycles per frame @    50 MHz =      533,333
+  cycles per frame @    10 MHz =      106,667
+  cycles per frame @     1 MHz =       10,667
+
+mutable words per bin      = 23  (of which 18 in the minimum trackers)
+constant words per bin     = 1
+mutable per-bin state      = 23,575 words
+  @ 16 bit = 46.0 KiB
+  @ 24 bit = 69.1 KiB
+  @ 32 bit = 92.1 KiB
+other array words          = 3,077 (input buffer, OLA, window, kernel)
+pre-roll buffer at startup = 5 x 1025 = 5,125 words (transient)
+
+== Python float64 reference speed ==
+0.204 ms per frame (budget 10.667 ms), real-time factor 0.019
+\end{lstlisting}

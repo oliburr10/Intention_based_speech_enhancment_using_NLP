@@ -1,0 +1,46 @@
+% Title page
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[brand] (current page.north west) rectangle ([yshift=-112mm]current page.north east);
+  \fill[brand!80!black] ([yshift=-112mm]current page.north west) rectangle ([yshift=-115mm]current page.north east);
+  % stylised spectrum bars
+  \foreach \i/\h in {0/8,1/14,2/22,3/30,4/26,5/18,6/12,7/20,8/34,9/40,10/31,11/22,12/15,13/10,14/7,15/12,16/18,17/13,18/9,19/6}{
+    \fill[white,opacity=0.16] ([xshift=118mm+\i*4.2mm,yshift=-109mm]current page.north west) rectangle ++(3.2mm,\h mm);
+  }
+  % chip outline
+  \begin{scope}[shift={([xshift=-38mm,yshift=-52mm]current page.north east)}]
+    \draw[white,opacity=0.55,line width=1pt,rounded corners=1.5mm] (-14mm,-14mm) rectangle (14mm,14mm);
+    \foreach \k in {-10,-5,0,5,10}{
+      \draw[white,opacity=0.55,line width=0.8pt] (\k mm,14mm) -- (\k mm,19mm);
+      \draw[white,opacity=0.55,line width=0.8pt] (\k mm,-14mm) -- (\k mm,-19mm);
+      \draw[white,opacity=0.55,line width=0.8pt] (14mm,\k mm) -- (19mm,\k mm);
+      \draw[white,opacity=0.55,line width=0.8pt] (-14mm,\k mm) -- (-19mm,\k mm);
+    }
+    \node[white,opacity=0.85,font=\sffamily\bfseries\small,align=center] at (0,0) {$\beta$\\[-1pt]\tiny DSP};
+  \end{scope}
+\end{tikzpicture}
+
+\vspace*{6mm}
+{\color{white}\sffamily
+  {\small\bfseries\MakeUppercase{Independent research project guide}}\par
+  \vspace{7mm}
+  {\fontsize{34}{38}\selectfont\bfseries From Intent\\[2mm] to Silicon\par}
+  \vspace{6mm}
+  \begin{minipage}{0.70\textwidth}
+  \large Taking intention-based speech enhancement into DSP hardware, ML acceleration and VLSI. A step-by-step guide.
+  \end{minipage}\par}
+
+\vspace{40mm}
+{\sffamily
+\begin{tabularx}{\textwidth}{@{}lL@{}}
+  \color{brand}\bfseries Prepared for & Aron Burrell \\
+  \color{brand}\bfseries Builds on    & \emph{Intention-Based Speech Enhancement for Hearing Aids Using NLP}, BSc thesis, DTU Electrical Engineering, in collaboration with Oticon~\cite{burrell2026thesis} \\
+  \color{brand}\bfseries Target areas & VLSI-based digital signal processing $\cdot$ hardware for ML inference $\cdot$ FPGA prototyping $\cdot$ open-source ASIC design \\
+  \color{brand}\bfseries Version     & 1.0 --- October 2026 \\
+\end{tabularx}}
+
+\vfill
+{\sffamily\small\color{conceptc}
+Every number about the thesis system in this guide was measured from the thesis code (see \cref{app:factsheet}) or is marked as an estimate. Tool versions and board details change; check each tool's own documentation before you install.\par}
+\end{titlepage}

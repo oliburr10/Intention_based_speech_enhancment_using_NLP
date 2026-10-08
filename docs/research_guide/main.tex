@@ -1,0 +1,74 @@
+% =========================================================================
+%  From Intent to Silicon -- a step-by-step research guide
+%  Build:  latexmk            (uses latexmkrc; output: build/main.pdf)
+%  Check one chapter:  tools/check_chapter.sh chapters/05-codesign
+% =========================================================================
+\documentclass[11pt,a4paper,twoside=false,open=any,parskip=false,
+               headings=standardclasses,numbers=noenddot]{scrreprt}
+
+\input{preamble}
+
+\addbibresource{bib/core.bib}
+\addbibresource{bib/ch01-02.bib}
+\addbibresource{bib/ch04-07.bib}
+\addbibresource{bib/ch05.bib}
+\addbibresource{bib/ch06.bib}
+\addbibresource{bib/ch08-09.bib}
+\addbibresource{bib/ch10-11.bib}
+\addbibresource{bib/ch12-13.bib}
+
+\hypersetup{
+  pdftitle={From Intent to Silicon: A Step-by-Step Research Guide},
+  pdfauthor={Aron Burrell},
+  pdfsubject={Independent research project guide: DSP hardware, ML acceleration and VLSI for intention-based speech enhancement},
+}
+
+\begin{document}
+
+% ---- Front matter -------------------------------------------------------
+\pagenumbering{roman}
+\include{frontmatter/titlepage}
+\include{frontmatter/howto}
+\tableofcontents
+
+% ---- Part I -------------------------------------------------------------
+\cleardoublepage
+\pagenumbering{arabic}
+\part{Foundations}\label{part:foundations}
+\include{chapters/01-overview}
+\include{chapters/02-primer}
+\include{chapters/03-workload}
+
+% ---- Part II ------------------------------------------------------------
+\part{The Project, Step by Step}\label{part:project}
+\include{chapters/04-setup}
+\include{chapters/05-codesign}
+\include{chapters/06-rtl}
+\include{chapters/07-verification}
+\include{chapters/08-fpga}
+\include{chapters/09-mlaccel}
+\include{chapters/10-asic}
+
+% ---- Part III -----------------------------------------------------------
+\part{Doing It Well}\label{part:doingitwell}
+\include{chapters/11-evaluation}
+\include{chapters/12-writeup}
+\include{chapters/13-plan}
+
+% ---- Appendices ---------------------------------------------------------
+\appendix
+\addpart{Appendices}
+\include{appendices/a-factsheet}
+\include{appendices/b-registers}
+\include{appendices/c-cheatsheet}
+\include{appendices/d-glossary}
+\include{appendices/e-templates}
+\include{appendices/f-reading}
+
+% ---- Bibliography -------------------------------------------------------
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\printbibliography[heading=bibintoc,title={Bibliography}]
+
+\end{document}
