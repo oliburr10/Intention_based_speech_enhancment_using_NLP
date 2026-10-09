@@ -1,3 +1,309 @@
 \chapter{Project Overview}\label{ch:overview}
 
-PLACEHOLDER --- this chapter is being written.
+This chapter sets out what the project is and why it is worth doing. It defines
+the research questions you will answer and the plan for answering them. Read it
+first, and come back to it whenever you lose sight of why a step matters.
+
+% =========================================================================
+\section{Where you are starting from}\label{sec:overview:start}
+
+Your thesis~\cite{burrell2026thesis} built a real-time speech enhancer for
+hearing aids that is controlled by plain language. It runs two pipelines
+concurrently:
+
+\begin{itemize}
+  \item \textbf{An audio pipeline.} It enhances the microphone signal frame by
+  frame: a sliding STFT with $\sqrt{\text{Hann}}$ windows and weighted
+  overlap-add, IMCRA noise estimation~\cite{cohen2003imcra}, and a parametric
+  Wiener filter $G=(\xi/(1+\xi))^\beta$ with a decision-directed a priori
+  SNR~\cite{ephraim1984mmse}.
+  \item \textbf{An NLP pipeline.} It turns a typed complaint into an intent
+  class and a severity score. It uses \code{all-mpnet-base-v2} sentence
+  embeddings~\cite{reimers2019sbert,song2020mpnet}, a linear SVM (test
+  macro-F1 0.957) and a Ridge regressor (CV MAE 0.100).
+\end{itemize}
+A parameter controller maps the result to DSP updates that take effect without
+interrupting the audio.
+
+The thesis answered its question: natural language \emph{can} drive the DSP, and
+the path from sentence to sound is intact. It also listed limitations
+honestly. One of them is the starting point for this project:
+
+\begin{quote}\itshape
+\code{all-mpnet-base-v2} is 110M parameters and effectively wants a GPU --- fine
+for a laptop proof-of-concept, far beyond embedded hearing-aid hardware.
+\end{quote}
+
+The same is true of the audio pipeline, for less obvious reasons. It runs in
+64-bit floating point, keeps about \num{23600} words of state between frames,
+performs 12 divisions and two transcendental functions per frequency bin, and
+delays every sample by \qty{21.33}{\ms} (\cref{ch:workload}). None of that
+matters on a laptop. All of it matters on a device that has to run all day on
+a hearing-aid battery, where the signal processor gets a power budget measured
+in milliwatts or less.
+
+% =========================================================================
+\section{The core idea}\label{sec:overview:idea}
+
+\Cref{ch:workload} shows that your system already has the structure of a real
+hardware system. A \emph{data plane} (the audio path) runs every
+\qty{10.667}{\ms} under a hard deadline. A \emph{control plane} (the intent path)
+runs only when the user speaks. The interface between them is tiny: four
+numbers ($\beta$, gain floor, output gain, tilt).
+
+In hardware that interface becomes even smaller. Because $\beta$ and the floor
+change only when the user complains, the whole gain curve can be precomputed by
+the control plane into a small lookup table. The datapath then never evaluates
+\code{pow} at all. Tilt and output gain become two registers. The NLP side
+controls the DSP by \emph{writing a table and two registers}, which is exactly
+how fitting parameters are programmed into real hearing-aid chips.
+
+That gives the hardware version of your thesis question:
+
+\begin{rqbox}{The project question}
+What is the smallest, lowest-power hardware that can still do intent-controlled
+speech enhancement, and what does each design decision cost in quality, latency,
+memory, area and energy?
+\end{rqbox}
+
+% =========================================================================
+\section{Research questions and hypotheses}\label{sec:overview:rq}
+
+The project question breaks down into four research questions. Each one has a
+measurable target, so you will know when you have answered it.
+
+\begin{rqbox}{RQ1 --- Precision}
+What minimum arithmetic precision (word lengths, number formats, function
+approximations) keeps the IMCRA + parametric-Wiener pipeline perceptually
+equivalent to the floating-point thesis reference?
+
+\textbf{Target:} $|\Delta\text{PESQ}|\le0.1$ and $|\Delta\text{STOI}|\le0.01$
+against float on the VoiceBank+DEMAND test set~\cite{valentini2016voicebank}.
+\textbf{Answered in} \cref{ch:codesign} (Phase~1).
+\end{rqbox}
+
+\begin{rqbox}{RQ2 --- Latency}
+How far can algorithmic latency be cut from \qty{21.33}{\ms} toward hearing-aid
+territory (\qty{10}{\ms} or less, ideally about \qty{8}{\ms}), and what does each
+step cost in quality and memory?
+
+\textbf{Answered in} \cref{ch:codesign} (Phase~1), with hardware cost confirmed
+in \cref{ch:rtl,ch:fpga}.
+\end{rqbox}
+
+\begin{rqbox}{RQ3 --- Cost}
+What are the area, power, energy per frame and memory costs of the resulting
+datapath on an FPGA and in an open-source ASIC flow? How do they trade against
+clock frequency and parallelism?
+
+\textbf{Answered in} \cref{ch:rtl,ch:fpga,ch:asic} (Phases~2, 4 and~5B).
+\end{rqbox}
+
+\begin{rqbox}{RQ4 --- The intent path at the edge}
+How small and how low-precision can the intent path be while keeping macro-F1
+close to the thesis's 0.957? The options are a quantised classifier head, a
+smaller encoder, or an intent model that works directly on audio.
+
+\textbf{Target:} within 0.02 macro-F1 for the quantised head; for encoders,
+report the full trade-off curve.
+\textbf{Answered in} \cref{ch:codesign} (first result) and \cref{ch:mlaccel}
+(Phase~5A).
+\end{rqbox}
+
+The research questions come with four hypotheses that give the project its
+first concrete experiments (\cref{tab:overview:hyp}). A hypothesis is a
+prediction you could be wrong about. If one fails, you have still learned
+something you can report.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Hypotheses, and how each is tested.}
+\label{tab:overview:hyp}
+\begin{tabularx}{\textwidth}{@{}lLLl@{}}
+\toprule
+ & Hypothesis & Test & Where \\
+\midrule
+H1 & A datapath of 16 bits or fewer, with LUT-based nonlinear functions, meets the RQ1 target. & Word-length sweep of the bit-accurate model & \cref{ch:codesign} \\
+H2 & Removing the 2$\times$ zero padding changes PESQ by less than 0.05, while halving FFT work and per-bin state. & Frame-configuration study & \cref{ch:codesign} \\
+H3 & Because the six classes are linearly separable, an int8 classifier head loses less than 0.01 macro-F1. & Post-training quantisation of the heads & \cref{ch:codesign,ch:mlaccel} \\
+H4 & With resource sharing (one butterfly, one per-bin pipeline), the design meets the real-time deadline at a clock of \qty{5}{\MHz} or less. & Cycle count in simulation, then on the FPGA & \cref{ch:rtl,ch:fpga} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Scope and non-goals}\label{sec:overview:scope}
+
+A research project needs edges. These are deliberately outside it:
+
+\begin{itemize}
+  \item \textbf{The perceptual calibration study.} The thesis left the mapping
+  from severity to parameter step size uncalibrated, and it needs a listening
+  study with hearing-aid users. This project does not attempt that. It does make
+  that study cheaper later: once parameter updates are just table writes, a
+  calibration experiment can sweep them on real hardware.
+  \item \textbf{Speech recognition.} The control plane keeps typed text, or
+  replaces it with a small audio-domain intent model (\cref{ch:mlaccel}). It does
+  not include a full ASR system.
+  \item \textbf{Analog front end and acoustics.} There is no microphone
+  preamplifier, ADC design, or feedback cancellation.
+  \item \textbf{A product.} The aim is measured evidence and transferable
+  skills, not a certified medical device.
+\end{itemize}
+
+% =========================================================================
+\section{Deliverables}\label{sec:overview:deliverables}
+
+\begin{enumerate}
+  \item \textbf{A public repository}, \file{intent-se-hw}, containing:
+        a bit-accurate Python golden model; SystemVerilog RTL; cocotb
+        testbenches; FPGA project scripts; and, on the ASIC track, LibreLane
+        configuration and reports.
+  \item \textbf{A specification} (\code{spec-v1}): number formats, frame
+        configuration and approximation choices, each backed by an experiment.
+  \item \textbf{A real-time FPGA demonstration} on a PYNQ-Z2. Typed complaints
+        change the audio you hear, through hardware registers. Record a short
+        video.
+  \item \textbf{A results set}: quality versus precision; latency versus quality
+        and memory; FPGA resources and power; and either ML-head accelerator
+        numbers or ASIC area, timing and power.
+  \item \textbf{A written report} in paper format (\cref{ch:writeup}), suitable
+        for a student conference submission or as the basis of an MSc thesis
+        proposal.
+\end{enumerate}
+
+% =========================================================================
+\section{Roadmap at a glance}\label{sec:overview:roadmap}
+
+The plan assumes about 12--15 hours per week for 26 weeks, including two buffer
+weeks (\cref{fig:overview:roadmap,tab:overview:phases}). \Cref{ch:plan} turns it
+into a week-by-week schedule with a risk register, and shows how to shrink it if
+you have less time.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=5.25mm,y=6.2mm,font=\sffamily\scriptsize]
+  % week grid
+  \foreach \w in {1,...,26}{
+    \node[text=conceptc] at (\w-0.5,0.55) {\w};
+    \draw[conceptc!25] (\w-1,0.2) -- (\w-1,-8.2);
+  }
+  \draw[conceptc!25] (26,0.2) -- (26,-8.2);
+  \node[anchor=east,text=conceptc] at (-0.2,0.55) {week};
+  % bars: name / start / end / row / colour
+  \foreach \n/\s/\e/\r/\c in {
+      {P0 Setup}/1/2/1/brand,
+      {P1 Co-design + golden model}/3/7/2/brand,
+      {P2 RTL design}/6/12/3/stepc,
+      {P3 Verification}/7/12/4/stepc,
+      {P4 FPGA prototype}/12/16/5/whyc,
+      {P5 Track A (ML) or B (ASIC)}/17/22/6/rqc,
+      {Write-up}/21/24/7/readc,
+      {Buffer}/25/26/8/conceptc}{
+    \fill[\c!75,rounded corners=0.6mm] (\s-1,-\r+0.32) rectangle (\e,-\r-0.32);
+    \node[anchor=west,text=black] at (\e+0.15,-\r) {\n};
+  }
+  % milestones
+  \foreach \m/\w in {M0/2,M1/7,M2/12,M3/16,M4/22,M5/24}{
+    \draw[pitc,line width=0.6pt,dashed] (\w,0.2) -- (\w,-8.4);
+    \node[fill=pitc,text=white,rounded corners=0.5mm,inner sep=1.2pt,font=\sffamily\bfseries\tiny] at (\w,-8.8) {\m};
+  }
+\end{tikzpicture}
+\caption{The project at a glance: phases (bars), weeks, and milestones M0--M5
+(red, at the end of the marked week).}
+\label{fig:overview:roadmap}
+\end{figure}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Phases, chapters and milestones.}
+\label{tab:overview:phases}
+\begin{tabularx}{\textwidth}{@{}llllL@{}}
+\toprule
+Phase & Chapter & Weeks & Milestone & Key deliverable \\
+\midrule
+0 Setup & \cref{ch:setup} & 1--2 & M0 & Toolchain, data, float baseline metrics \\
+1 Co-design & \cref{ch:codesign} & 3--7 & M1 & Bit-accurate model, design-space results, golden vectors, \code{spec-v1} \\
+2 RTL & \cref{ch:rtl} & 6--12 & \multirow{2}{*}{M2} & \multirow{2}{=}{RTL bit-exact against the golden model in simulation} \\
+3 Verification & \cref{ch:verification} & 7--12 & & \\
+4 FPGA & \cref{ch:fpga} & 12--16 & M3 & Real-time demo; latency, resource and power measurements \\
+5A ML accel. & \cref{ch:mlaccel} & 17--22 & M4 & Int8 head engine plus encoder or audio-intent study \\
+5B ASIC & \cref{ch:asic} & 17--22 & M4 & Area, timing and power from an open PDK flow \\
+Write-up & \cref{ch:writeup} & 21--24 & M5 & Report, release v1.0, demo video \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Two tracks after the prototype}\label{sec:overview:tracks}
+
+After the FPGA demo (M3) you choose one of two directions for six weeks. Choose
+around week 16, based on what you enjoyed and what you want to do next:
+
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Track A --- ML acceleration (\cref{ch:mlaccel})]
+  Bring the intent path into hardware: an int8 matrix--vector engine for the
+  classifier and severity heads, then either a compressed text encoder or a
+  small model that recognises spoken intent directly from audio features
+  computed by your own FFT. Choose this if you are aiming at AI-accelerator or
+  edge-ML roles.
+  \item[Track B --- VLSI and ASIC (\cref{ch:asic})]
+  Take the per-bin datapath through an open-source RTL-to-GDS flow and report
+  area, timing and power in a real process. Optionally submit a small block to
+  Tiny Tapeout. Choose this if you are aiming at digital IC design or DSP-ASIC
+  roles.
+\end{description}
+
+Both tracks reuse everything from Phases 0--4, and both answer a research
+question (RQ4 or RQ3) with numbers.
+
+% =========================================================================
+\section{Skills you will gain}\label{sec:overview:skills}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Skills, where you practise them, and the evidence you can show.}
+\label{tab:overview:skills}
+\begin{tabularx}{\textwidth}{@{}lLL@{}}
+\toprule
+Skill & Where in the project & Evidence for employers \\
+\midrule
+Fixed-point and word-length design & Phase~1 golden model and sweeps & Quality-versus-bits plots; a justified spec \\
+Algorithm--architecture co-design & Phase~1 (LUT gain, log-domain trackers, frame study) & \enquote{Decisions that flip} story; Pareto plots \\
+Microarchitecture and RTL (SystemVerilog) & Phase~2 & Lint-clean RTL; resource log; block diagrams \\
+Verification (cocotb, Verilator, assertions) & Phase~3 & Bit-exact regression in CI; coverage report \\
+FPGA prototyping (Zynq, AXI, I2S) & Phase~4 & Working demo video; timing and utilisation reports \\
+ML hardware (quantisation, MAC arrays) & Track A & Int8 accuracy study; cycles and energy per inference \\
+Physical design (synthesis, place and route, STA, power) & Track B & GDS layout; area, timing and power reports \\
+Research method and writing & Throughout & Lab notebook, reproducible results, paper draft \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Why this matters beyond the project}\label{sec:overview:industry}
+
+Hearing aids are one of the most demanding applications of low-power digital
+signal processing. The devices are tiny, run all day on a small battery, and
+have to process audio with very little delay. Hearing-aid manufacturers
+therefore design their own low-power DSP chips. Neural networks now run on the
+device itself: Oticon, for example, marketed Oticon More (2021) as the first
+hearing aid with an on-board deep neural network. Denmark is home to several of
+the large hearing-aid companies, including Demant (Oticon), GN and WS
+Audiology.
+
+Your thesis was done with Oticon. A project that goes from that thesis to
+measured, verified hardware gives you a concrete story for exactly the
+engineering teams that build these chips: fixed-point DSP, low-power
+architecture, verification, and ML at the edge.
+
+\begin{donebox}[Before moving on]
+\begin{checklist}
+  \item You can state the project question and RQ1--RQ4 in your own words.
+  \item You know which chapter answers each research question.
+  \item You have read \cref{ch:workload} (the measured workload) and skimmed
+        \cref{ch:plan} (the schedule).
+  \item You have discussed scope with your supervisor, especially Track A
+        versus Track B and the credit load (\cref{ch:plan}).
+\end{checklist}
+\end{donebox}

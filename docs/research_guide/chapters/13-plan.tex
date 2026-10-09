@@ -1,3 +1,232 @@
 \chapter{Timeline, Milestones and Risk Management}\label{ch:plan}
 
-PLACEHOLDER --- this chapter is being written.
+A research project rarely fails for technical reasons. It fails because a few
+weeks disappear into a problem nobody noticed growing, or because the scope never
+stopped expanding. This chapter is the defence: a schedule you can track, exit
+criteria that tell you unambiguously when a phase is done, a weekly routine, and
+a list of the risks most likely to hurt you, each with a plan.
+
+% =========================================================================
+\section{The schedule}\label{sec:plan:gantt}
+
+\Cref{fig:plan:gantt} expands the roadmap from \cref{ch:overview} into the main
+steps of each phase. It assumes about 12--15 hours per week. Overlaps are
+deliberate. You start writing RTL for the simplest blocks while the last Phase~1
+sweeps run, and verification runs alongside RTL design rather than after it.
+
+\begin{figure}[htbp]
+\centering
+\begin{ganttchart}[
+    x unit=4.15mm, y unit title=5mm, y unit chart=4.35mm,
+    hgrid={*1{draw=conceptc!15}}, vgrid={*1{draw=conceptc!15}},
+    title height=1, title label font=\sffamily\tiny,
+    bar height=0.55, bar top shift=0.22,
+    bar label font=\sffamily\scriptsize, group label font=\sffamily\scriptsize\bfseries,
+    milestone label font=\sffamily\scriptsize\bfseries\color{pitc},
+    group height=0.3, group top shift=0.35,
+    group/.append style={fill=brand},
+    bar/.append style={fill=brand!45,draw=brand!70},
+    milestone/.append style={fill=pitc,draw=pitc},
+    milestone height=0.55, milestone top shift=0.22,
+    inline=false]{1}{26}
+  \gantttitlelist{1,...,26}{1} \\
+  \ganttgroup{Phase 0: setup}{1}{2} \\
+  \ganttbar{Repo, toolchain, notebook}{1}{1} \\
+  \ganttbar{Data, metrics, float baseline}{2}{2} \\
+  \ganttmilestone{M0 baseline}{2} \\
+  \ganttgroup{Phase 1: co-design}{3}{7} \\
+  \ganttbar{Profiling, frame study}{3}{4} \\
+  \ganttbar{Bit-accurate model}{4}{6} \\
+  \ganttbar{Sweeps, LUTs, NLP head}{5}{7} \\
+  \ganttmilestone{M1 spec-v1}{7} \\
+  \ganttgroup{Phases 2+3: RTL, verification}{6}{12} \\
+  \ganttbar{Small blocks + tests}{6}{8} \\
+  \ganttbar{bin\_pipeline + tests}{8}{10} \\
+  \ganttbar{FFT, STFT/OLA, top}{10}{12} \\
+  \ganttmilestone{M2 bit-exact RTL}{12} \\
+  \ganttgroup{Phase 4: FPGA}{12}{16} \\
+  \ganttbar{Board bring-up, Vivado}{12}{13} \\
+  \ganttbar{Integration, control}{14}{15} \\
+  \ganttbar{Measurements, demo}{16}{16} \\
+  \ganttmilestone{M3 demo}{16} \\
+  \ganttgroup{Phase 5: track A or B}{17}{22} \\
+  \ganttbar{Track work}{17}{22} \\
+  \ganttmilestone{M4 track result}{22} \\
+  \ganttgroup{Write-up and buffer}{21}{26} \\
+  \ganttbar{Report, release}{21}{24} \\
+  \ganttmilestone{M5 v1.0}{24} \\
+  \ganttbar{Buffer}{25}{26}
+\end{ganttchart}
+\caption{Week-by-week schedule. Groups (dark bars) are phases, light bars are
+work packages, red diamonds are milestones at the end of the week.}
+\label{fig:plan:gantt}
+\end{figure}
+
+% =========================================================================
+\section{Milestones and exit criteria}\label{sec:plan:milestones}
+
+A milestone is reached when its exit criteria are met and there is
+\emph{evidence} for each one, not when you feel nearly done
+(\cref{tab:plan:milestones}). At every milestone, tag the repository, for
+example \code{git tag m1-spec-v1}, and write a one-page milestone report using
+the template in \cref{app:templates}.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Milestones, exit criteria and evidence.}
+\label{tab:plan:milestones}
+\begin{tabularx}{\textwidth}{@{}llLL@{}}
+\toprule
+ & Week & Exit criteria & Evidence \\
+\midrule
+M0 & 2 & Toolchain smoke tests pass; VoiceBank+DEMAND test set downloaded; metrics harness unit-tested; float baseline measured & CI green; \file{experiments/000-baseline/results.csv}; baseline table in notebook \\
+M1 & 7 & Bit-accurate model matches float within the RQ1 target at the chosen formats; frame configuration chosen; LUT sizes chosen; NLP head quantised; golden vectors exported & \code{spec-v1} tag; spec document; sweep plots; golden vector files \\
+M2 & 12 & All RTL blocks lint-clean; \code{ise\_top} bit-exact with the golden model on the test vectors and at least one full utterance; directed corner cases pass & cocotb regression in CI; coverage summary; Yosys resource log \\
+M3 & 16 & Real-time audio through the FPGA; typed complaints change parameters through registers; latency, resources and power measured & Demo video; Vivado timing and utilisation reports; latency measurement \\
+M4 & 22 & Track A: int8 head engine verified and integrated, plus encoder or audio-intent study. Track B: block through RTL-to-GDS with clean DRC/LVS and power from real activity & Results tables; reports; layout screenshot \\
+M5 & 24 & Report or paper draft complete; repository released as v1.0 with a reproducible README & PDF; release tag; DOI if archived \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Weekly rhythm}\label{sec:plan:rhythm}
+
+\begin{itemize}
+  \item \textbf{Monday (15 minutes).} Choose this week's two or three goals.
+        Each must finish with something checkable, such as \enquote{the
+        \code{recip\_unit} test passes}, not \enquote{work on the reciprocal}.
+  \item \textbf{Every working session (5 minutes).} Start by rereading your last
+        notebook entry, and end by writing a new one: what you did, what
+        happened, and what you will do next. This is the habit that saves
+        projects.
+  \item \textbf{Friday (30 minutes).} Review the week against the plan. Update
+        the Gantt chart and the risk register. Write the weekly status note
+        (\cref{app:templates}).
+  \item \textbf{Every two weeks.} Meet your supervisor with the status notes.
+        Bring a decision you need help with, not just a progress report.
+\end{itemize}
+
+\begin{tipbox}[Protect deep-work blocks]
+RTL debugging and verification need uninterrupted blocks of at least two to
+three hours. Twelve hours in four solid blocks gets far more done than twelve
+hours in twenty fragments.
+\end{tipbox}
+
+% =========================================================================
+\section{Fitting the project to your credit load}\label{sec:plan:scope}
+
+Under the ECTS system, one credit usually corresponds to roughly 25--30 hours of
+work. Check the norms and rules for your course type at your
+university~\cite{ch12-13:dtucoursebase,ch12-13:dtuprojectcourses}. The full plan
+is about 26 weeks at 12--15 hours, roughly 310--390 hours. If you have less time,
+cut whole phases rather than doing every phase badly
+(\cref{tab:plan:scope}).
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Three scopes. The hours are rough guides, including writing.}
+\label{tab:plan:scope}
+\begin{tabularx}{\textwidth}{@{}lrLL@{}}
+\toprule
+Scope & Hours & Contents & Research questions \\
+\midrule
+Compact & $\approx$140 & Phase~0; Phase~1 (frame study, bit-accurate model, NLP head quantisation); one RTL block (\code{recip\_unit} or \code{head\_engine}) verified in simulation & RQ1, RQ2, first part of RQ4 \\
+Core & $\approx$250 & Compact, plus the full datapath RTL bit-exact in simulation (Phases~2--3) and synthesis estimates with Yosys and Vivado out-of-context runs & RQ1, RQ2, RQ3 (estimates), RQ4 (head) \\
+Full & $\approx$350 & Core, plus the FPGA prototype (Phase~4) and one track (Phase~5) & All four \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Decision points}\label{sec:plan:decisions}
+
+Some decisions should be made at fixed points, using evidence, so they do not
+drift:
+
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[End of week 4 --- frame configuration]
+  Choose the sample rate, window and padding from the frame study. If no
+  configuration under \qty{10}{\ms} meets the quality target, keep the best
+  under \qty{16}{\ms} and report the trade-off honestly. That is still an answer
+  to RQ2.
+  \item[End of week 7 --- precision (M1)]
+  If some block needs more than 24 bits to meet RQ1, give that block a small
+  custom floating-point or logarithmic format, or relax the target and
+  document it. Do not let Phase~1 run into week 9.
+  \item[Week 12 --- FPGA readiness]
+  If you have no working Vivado host by week 12 (\cref{ch:setup}), switch Phase~4
+  to a \emph{simulation-only demo}: process recorded audio through the RTL and
+  play the result back. Move the saved weeks into Phase~5.
+  \item[Week 16 --- choose the track]
+  Choose Track A or B based on your results so far, your interests and your
+  supervisor's advice. Write the decision and its reasons in the notebook.
+\end{description}
+
+% =========================================================================
+\section{Risk register}\label{sec:plan:risks}
+
+Review this table every Friday. A risk becomes an \emph{issue} when its trigger
+appears, and then you act on its mitigation immediately
+(\cref{tab:plan:risks}). L and I are likelihood and impact (L = low,
+M = medium, H = high).
+
+\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.21\textwidth}ccL>{\raggedright\arraybackslash}p{0.2\textwidth}@{}}
+\caption{Risk register.}\label{tab:plan:risks}\\
+\toprule
+Risk & L & I & Mitigation & Early-warning trigger \\
+\midrule
+\endfirsthead
+\toprule
+Risk & L & I & Mitigation & Early-warning trigger \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Vivado cannot run on your computer (it is not supported on macOS) & H & H & Arrange an x86-64 Linux or Windows machine in week 1: a lab PC, a remote university machine or a cloud VM~\cite{ch12-13:ug973} & No Vivado host by week 8 \\
+FFT block harder than expected & M & H & Build it last among datapath blocks; start with a plain complex radix-2 FFT, and optimise only after it is bit-exact & FFT not passing tests by week 11 \\
+Phase~1 never ends (\enquote{one more sweep}) & H & M & Hard stop at week 7; anything unfinished becomes future work & Week 6 with no draft spec \\
+Fixed-point model does not match float & M & H & Compare block by block with probes; quantise one block at a time & Mismatch you cannot localise within one day \\
+RTL and golden model disagree on rounding & H & M & Write rounding and saturation helpers once and use them everywhere; test each block exhaustively or randomly against the model & First block mismatch unexplained after 2 hours \\
+PESQ/STOI library problems (sample-rate limits, install) & M & L & Resample to \qty{16}{\kHz} for PESQ; pin versions; keep SI-SDR as a dependency-free fallback & Install fails or scores look implausible \\
+Board codec or audio IP will not work & M & M & Prove the audio path with the vendor's example first; fall back to streaming audio from the ARM through DMA & Base-overlay audio example fails \\
+Timing closure on the FPGA & L & M & The design needs only a few MHz; add a pipeline stage or constrain a slower clock & Negative slack at \qty{100}{\MHz} \\
+Tool version drift breaks scripts & M & M & Record versions; pin Python packages; use containers or Nix where offered & A tool update changes results \\
+Underestimated effort & H & M & Weekly review; cut scope early using \cref{tab:plan:scope} & Two consecutive weeks behind \\
+LibreLane / PDK installation trouble (Track B) & M & M & Use the documented Nix route and the bundled example first; ask early in the community channels & Example design fails after half a day \\
+Hardware failure or loss (board, SD card) & L & M & Keep scripts in git so the project can be rebuilt; image the SD card & --- \\
+Data access problems & L & M & Download VoiceBank+DEMAND in week 2 and keep a local copy & Download blocked \\
+Motivation dip in the long middle (RTL debugging) & M & H & Small visible wins weekly; regular supervisor meetings; demo intermediate results to friends & Notebook entries become sparse \\
+\end{xltabular}
+
+% =========================================================================
+\section{When you get stuck}\label{sec:plan:stuck}
+
+Getting stuck is normal. Staying stuck for a week is a process failure. Use this
+protocol:
+
+\begin{enumerate}
+  \item \textbf{Timebox.} Give a problem two focused hours. Write down what you
+        tried as you go.
+  \item \textbf{Shrink it.} Build the smallest reproduction you can: one module,
+        one test, one input. Half of all bugs are found while doing this.
+  \item \textbf{Compare with the model.} In this project you almost always have a
+        golden model. Find the \emph{first} signal or block where the two
+        disagree.
+  \item \textbf{Ask.} Ask your supervisor, or the tool's own community: the
+        GitHub issues and discussions of Verilator and cocotb, the PYNQ support
+        forum~\cite{ch12-13:pynqforum}, the Tiny Tapeout community for Track~B,
+        or a general FPGA forum. Post the minimal reproduction, the exact tool
+        versions, and what you already tried.
+  \item \textbf{Route around it.} If the problem is not central to a research
+        question, find a workaround, note it as a limitation, and move on.
+\end{enumerate}
+
+\begin{donebox}[You are using this chapter well if]
+\begin{checklist}
+  \item The Gantt chart and risk register are updated every Friday.
+  \item Every milestone has a tag, a report and evidence for each exit criterion.
+  \item Decisions at the four decision points are written down with reasons.
+  \item No problem has stayed unsolved and unescalated for more than a week.
+\end{checklist}
+\end{donebox}
