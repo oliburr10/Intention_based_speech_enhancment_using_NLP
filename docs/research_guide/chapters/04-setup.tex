@@ -1,3 +1,322 @@
 \chapter{Phase 0 --- Setting Up Your Research Environment}\label{ch:setup}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{1--2} \quad Milestone M0
+
+Phase~0 builds everything the rest of the project stands on: a repository with
+a sensible structure, a working hardware toolchain, evaluation data, a trusted
+metrics harness, and a measured \emph{float baseline}. Every later result is
+compared against that baseline. It is unglamorous work, but a day saved here
+costs a week later.
+
+\begin{whybox}
+RQ1 and RQ2 are questions about \emph{differences}: fixed point against float,
+\qty{8}{\ms} against \qty{21}{\ms}. A difference is only meaningful if the
+reference is measured carefully and reproducibly, with the same data, the same
+metric code and the same alignment. That reference is the thesis pipeline, so
+Phase~0 measures it properly for the first time on a standard benchmark.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+The thesis repository; a computer (macOS, Linux or Windows); about 30\,GB of
+free disk space; access to an x86-64 Linux or Windows machine for Vivado later
+& \file{intent-se-hw} repository with CI; working toolchain; VoiceBank+DEMAND on
+disk; \file{metrics/quality.py} with tests; baseline results table; lab notebook
+\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =========================================================================
+\section{Steps}\label{sec:setup:steps}
+
+\begin{stepbox}[label=st:setup:notebook]{Start a lab notebook}
+Create \file{docs/notebook/} in the new repository (next step) and write one
+Markdown file per working day, named \file{YYYY-MM-DD.md}. Each entry records
+the goal, what you did, the commands you ran, the commit hash, the results and
+the next step. A template is in \cref{app:templates}.
+
+Why so formal? In week 14 you will need to know exactly which configuration
+produced the plot in week 5. Memory will not tell you, and your notebook will.
+
+\textbf{Check:} today's entry exists and says what Phase~0 must achieve.
+\textbf{Effort:} 30 minutes now, then 5 minutes per session for the rest of the
+project.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:repo]{Create the \texttt{intent-se-hw} repository}
+Keep the thesis repository as an honest record of the thesis, and start a new
+one for the hardware project. It imports the thesis package as its
+floating-point reference.
+
+\begin{lstlisting}[style=plain]
+intent-se-hw/
+  golden/        bit-accurate Python model (Phase 1)
+  metrics/       PESQ, STOI, SI-SDR, delta-SNR
+  experiments/   one folder per experiment: config.yaml, results.csv, notes.md
+  nlp_hw/        classifier-head quantisation, encoder studies
+  rtl/           SystemVerilog (Phase 2)
+  tb/            cocotb testbenches (Phase 3)
+  fpga/pynq_z2/  Vivado Tcl scripts, overlay, notebooks (Phase 4)
+  asic/          LibreLane configuration, constraints, reports (Phase 5B)
+  docs/          spec, notebook, figures
+  .github/workflows/  CI
+\end{lstlisting}
+
+\begin{lstlisting}[style=shell]
+mkdir intent-se-hw && cd intent-se-hw && git init
+python3 -m venv .venv && source .venv/bin/activate
+# the thesis code as an editable dependency (adjust the path)
+pip install -e ../Intention_based_speech_enhancment_using_NLP
+pip install numpy scipy soundfile pandas matplotlib pytest ruff pesq pystoi pyyaml
+pip freeze > requirements-lock.txt
+\end{lstlisting}
+
+Add a \file{pyproject.toml} for your own packages (\file{golden},
+\file{metrics}, \file{nlp_hw}) and a minimal \file{README.md} describing the
+goal and layout. Commit.
+
+\textbf{Check:} \code{python -c "from intent\_se.audio import SpeechEnhancer;
+print(SpeechEnhancer().self\_test())"} prints a value around \num{4e-16}.
+\textbf{Effort:} 1--2 hours.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:tools]{Install the open-source hardware toolchain}
+You need a simulator and linter (\tool{Verilator}~\cite{verilator}), a
+Python testbench framework (\tool{cocotb}~\cite{cocotb}), a second simulator as
+a cross-check (\tool{Icarus Verilog}), a waveform viewer (\tool{GTKWave} or
+\tool{Surfer}), and a synthesis tool for quick area estimates
+(\tool{Yosys}~\cite{yosys}).
+
+The easiest route on Linux and macOS is the \textbf{YosysHQ OSS CAD Suite}. It
+is a single download that bundles Yosys, Verilator, Icarus Verilog, GTKWave,
+SymbiYosys and more. Unpack it and source its environment script. On macOS,
+Homebrew (\code{brew install verilator icarus-verilog yosys}) also works.
+Distribution packages of Verilator are often too old for current cocotb, so
+check the minimum Verilator version in the cocotb documentation.
+
+Install cocotb into your project's virtual environment so it uses the same
+Python as your golden model: \code{pip install cocotb}.
+
+Smoke-test everything with a ten-line counter:
+
+\begin{lstlisting}[style=sv,caption={\texttt{sandbox/counter.sv}}]
+module counter (input logic clk, input logic rst, output logic [7:0] count);
+  always_ff @(posedge clk) begin
+    if (rst) count <= '0;
+    else     count <= count + 8'd1;
+  end
+endmodule
+\end{lstlisting}
+
+\begin{lstlisting}[style=py,caption={\texttt{sandbox/test\_counter.py}}]
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import ClockCycles
+
+@cocotb.test()
+async def counts_up(dut):
+    cocotb.start_soon(Clock(dut.clk, 10, "ns").start())
+    dut.rst.value = 1
+    await ClockCycles(dut.clk, 3)
+    dut.rst.value = 0
+    await ClockCycles(dut.clk, 2)
+    start = int(dut.count.value)
+    await ClockCycles(dut.clk, 5)
+    assert int(dut.count.value) == start + 5
+\end{lstlisting}
+
+\begin{lstlisting}[style=shell]
+verilator --version && yosys -V && iverilog -V | head -1
+verilator --lint-only -Wall sandbox/counter.sv          # no warnings expected
+yosys -p "read_verilog -sv sandbox/counter.sv; synth -top counter; stat"
+\end{lstlisting}
+
+Run the cocotb test with cocotb's Makefile flow or its Python runner. The
+variable names changed between cocotb~1.x and~2.x (for example \code{TOPLEVEL}
+became \code{COCOTB\_TOPLEVEL}), so copy the quick-start example for your
+installed version from the cocotb documentation~\cite{ch12-13:cocotbdocs}.
+
+\textbf{Check:} the lint is clean, Yosys reports a cell count, and the cocotb
+test passes on Verilator \emph{and} on Icarus. \textbf{Effort:} 3--5 hours.
+Tool installation is where newcomers lose time, so timebox it and ask for help
+early.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:vivado]{Secure a Vivado host now (you need it in week 12)}
+AMD Vivado, needed for the PYNQ-Z2 in Phase~4, runs on x86-64 Linux and Windows
+only~\cite{ch12-13:ug973}. It does not run on macOS, and Apple-silicon Macs
+cannot run it natively. If your main computer is a Mac, arrange one of these
+\emph{now}:
+\begin{itemize}
+  \item a lab or project PC at your university;
+  \item a remote Linux machine you can reach by SSH or remote desktop;
+  \item a cloud x86-64 Linux VM. Vivado needs several CPU cores, plenty of RAM
+        and a large disk.
+\end{itemize}
+The free edition of Vivado supports the Zynq-7020 on the PYNQ-Z2. Check which
+Vivado version your chosen PYNQ image release expects before downloading
+(\cref{ch:fpga}); the installer is very large.
+
+\textbf{Check:} you can log in to the machine and have enough disk space for
+Vivado. \textbf{Effort:} 1--2 hours to arrange; the installation itself can
+happen in the background later.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:data]{Get the evaluation data}
+Download \textbf{VoiceBank+DEMAND}~\cite{valentini2016voicebank,valentini2017dataset}
+from the University of Edinburgh DataShare (DOI \code{10.7488/ds/2117}). It is the
+most widely used benchmark for single-channel speech enhancement. It is recorded
+at \qty{48}{\kHz}, the same rate as your thesis system, and it provides clean and
+noisy versions of every utterance.
+
+\begin{itemize}
+  \item \textbf{Test set:} 824 utterances from two unseen speakers, at SNRs of
+        2.5, 7.5, 12.5 and \qty{17.5}{\dB}. This is where you report results.
+  \item \textbf{Training set:} 11,572 utterances from 28 speakers, at SNRs of 0,
+        5, 10 and \qty{15}{\dB}. You do not train anything on the audio side, but
+        use a fixed subset of it as a \emph{development} set for tuning (LUT sizes,
+        word lengths), so the test set is touched only once.
+        This is the same discipline as your thesis's classifier
+        selection.
+\end{itemize}
+Also generate a small set of \textbf{synthetic signals} for hardware testing:
+silence, a full-scale sine, a quiet sine in white noise, an impulse, a chirp, DC,
+and clipped noise. Real speech hides bugs that these signals expose
+immediately (\cref{ch:verification}).
+
+\textbf{Check:} a script counts 824 clean and 824 noisy test files, all at
+\qty{48}{\kHz}, and the synthetic signals are generated deterministically from a
+fixed seed. \textbf{Effort:} 2 hours plus download time.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:metrics]{Build and test the metrics harness}
+Write \file{metrics/quality.py} with four metrics. Each one takes the clean
+reference and the processed signal, already aligned
+(\cref{st:setup:baseline}).
+
+\begin{itemize}
+  \item \textbf{PESQ}, wideband, ITU-T P.862.2~\cite{itu2001pesq,itu2007pesqwb}.
+  The common Python package \code{pesq} accepts only 8 or \qty{16}{\kHz}
+  signals, so resample from 48 to \qty{16}{\kHz} first.
+  \item \textbf{STOI}~\cite{taal2011stoi}, via \code{pystoi}.
+  \item \textbf{SI-SDR}~\cite{leroux2019sisdr}, in a few lines of numpy. It has
+  no dependencies, so it is your fallback if a package breaks.
+  \item \textbf{$\Delta$SNR}: the output SNR minus the input SNR, both against
+  the clean reference.
+\end{itemize}
+
+\begin{lstlisting}[style=py,caption={The core of \texttt{metrics/quality.py}.}]
+import numpy as np
+from math import gcd
+from scipy.signal import resample_poly
+from pesq import pesq
+from pystoi import stoi
+
+def to_16k(x, fs):
+    g = gcd(16000, fs)
+    return resample_poly(x, 16000 // g, fs // g)
+
+def si_sdr(ref, est):
+    ref = ref - ref.mean(); est = est - est.mean()
+    target = (np.dot(est, ref) / np.dot(ref, ref)) * ref
+    noise = est - target
+    return 10 * np.log10(np.sum(target**2) / np.sum(noise**2))
+
+def quality(ref, est, fs=48000):
+    return {
+        "pesq_wb": pesq(16000, to_16k(ref, fs), to_16k(est, fs), "wb"),
+        "stoi": stoi(ref, est, fs, extended=False),
+        "si_sdr": si_sdr(ref, est),
+    }
+\end{lstlisting}
+
+Write unit tests (\file{metrics/test_quality.py}) that pin down each metric's
+behaviour:
+\begin{itemize}
+  \item identical signals give PESQ near its maximum, STOI near 1, and a very
+        high SI-SDR;
+  \item a clean signal plus white noise at a known SNR gives an SI-SDR within
+        about \qty{0.1}{\dB} of that SNR;
+  \item scaling the estimate leaves SI-SDR unchanged, since that is the
+        \enquote{scale-invariant} part.
+\end{itemize}
+
+\textbf{Check:} \code{pytest metrics} passes. \textbf{Effort:} 3--4 hours.
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:baseline]{Measure the float baseline}
+Run the thesis \code{SpeechEnhancer} over the whole test set and record the
+metrics per utterance. Do this for the unprocessed noisy input and for
+$\beta\in\{0.5, 1.0, 1.5, 2.0\}$ with the other parameters at their defaults.
+
+Two details matter:
+\begin{enumerate}
+  \item \textbf{Alignment.} Offline, \code{process\_signal} returns output
+  delayed by exactly 512 samples (one hop) relative to its input. This was
+  measured with an impulse. Shift the output by 512 samples before computing
+  metrics, otherwise PESQ and SI-SDR punish a delay that is not a quality
+  problem. Verify the shift yourself by cross-correlation on one file.
+  \item \textbf{Pre-roll.} The first 5 frames (about \qty{53}{\ms}) pass through
+  unprocessed while IMCRA is seeded. Keep this behaviour, since the hardware
+  will have it too, but note it in your results.
+\end{enumerate}
+
+Save everything under \file{experiments/000-baseline/}:
+\begin{itemize}
+  \item \file{config.yaml}: parameters, commit hash, package versions;
+  \item \file{results.csv}: one row per utterance and setting;
+  \item \file{summary.md}: means and 95\% confidence intervals per setting and
+        per input SNR (\cref{ch:evaluation}).
+\end{itemize}
+
+\textbf{Check:} enhancement improves SI-SDR and $\Delta$SNR over the noisy
+input. If PESQ or STOI get worse at some $\beta$ values, do not panic: it is
+a known property of Wiener-type filters, and a finding worth writing down. The
+whole run is reproducible from one command. \textbf{Effort:} 4--6 hours
+(the run itself takes minutes).
+\end{stepbox}
+
+\begin{stepbox}[label=st:setup:ci]{Set up continuous integration}
+Add a GitHub Actions workflow (\file{.github/workflows/ci.yml}) that installs
+the Python environment and runs \code{ruff} and \code{pytest} on every push.
+In Phase~3 you will add Verilator and the cocotb regression to the same
+workflow.
+
+\textbf{Check:} the CI badge is green on the main branch.
+\textbf{Effort:} 1--2 hours.
+\end{stepbox}
+
+% =========================================================================
+\section{Pitfalls}\label{sec:setup:pitfalls}
+
+\begin{pitfallbox}[Pitfalls in Phase 0]
+\begin{itemize}
+  \item \textbf{Unaligned signals.} Forgetting the 512-sample delay makes every
+        metric look worse than it is, and the error changes with the frame
+        configuration in Phase~1, which corrupts your comparisons.
+  \item \textbf{Tuning on the test set.} Choose every parameter on the
+        development subset. Touch the test set only to report results.
+  \item \textbf{Unpinned versions.} PESQ implementations and resamplers differ
+        slightly. Pin package versions and record them with each result.
+  \item \textbf{Leaving Vivado until week 12.} A Mac cannot run it. Solve this
+        now.
+  \item \textbf{Polishing the setup forever.} Phase~0 has two weeks. A working,
+        tested harness is enough; elegance can come later.
+\end{itemize}
+\end{pitfallbox}
+
+\begin{donebox}[Milestone M0 is reached when]
+\begin{checklist}
+  \item \file{intent-se-hw} exists with the agreed layout, a lock file and green CI.
+  \item Verilator, Icarus, Yosys, cocotb and a waveform viewer pass their smoke tests.
+  \item A Vivado host is arranged.
+  \item VoiceBank+DEMAND and the synthetic signals are on disk.
+  \item \file{metrics/quality.py} is implemented and unit-tested.
+  \item The float baseline is measured, aligned, saved and summarised.
+  \item The lab notebook has an entry for every working day so far.
+\end{checklist}
+\end{donebox}

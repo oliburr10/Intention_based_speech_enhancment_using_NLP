@@ -1,3 +1,428 @@
 \chapter{Phase 1 --- Algorithm--Hardware Co-Design and the Fixed-Point Golden Model}\label{ch:codesign}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{3--7} \quad Milestone M1
+
+This is the most important phase of the project. You turn the floating-point
+thesis code into a \emph{hardware specification}: a sample rate, frame size,
+number format and function approximation for every signal, each justified by an
+experiment. You also build a Python model that reproduces, bit for bit, what the
+hardware will compute. Phase~2 then implements that model in RTL, and Phase~3
+proves the RTL matches it.
+
+\begin{whybox}
+Phase~1 answers RQ1 (precision) and RQ2 (latency), tests H1 and H2, and gives a
+first answer to RQ4 (H3, the quantised classifier head). It is also where most
+of the \emph{research} in the project happens. RTL implements decisions; this
+phase makes them. A hardware engineer who can say \enquote{16 bits here, because
+this sweep shows that 14 costs 0.08 PESQ} is worth far more than one who picked
+16 because it is a round number.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+M0: metrics harness, float baseline, development and test sets; \cref{ch:workload}
+and \cref{app:factsheet}
+& \file{golden/} bit-accurate model; sweep results and plots; a specification
+document; golden test vectors; NLP head quantisation results; repository tag
+\code{spec-v1} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{conceptbox}{Bit-accurate versus bit-exact}
+A \emph{bit-accurate} model computes with exactly the integers the hardware
+will hold. Every rounding, saturation and table lookup is explicit, and none of
+it is left to numpy's floating point. When the RTL later produces the same
+integers on the same inputs, the two are \emph{bit-exact}. That is what
+verification checks (\cref{ch:verification}). Floating-point code can only ever
+be \enquote{close}, and \enquote{close} gives you nothing to test against when
+debugging hardware.
+\end{conceptbox}
+
+% =========================================================================
+\section{Steps}\label{sec:codesign:steps}
+
+\begin{stepbox}[label=st:codesign:profile]{Instrument the float model and profile dynamic range}
+Before choosing any number format you need to know the range of every signal.
+Subclass or wrap \code{IMCRA} and \code{ParametricWienerFilter} so each
+intermediate quantity is recorded per frame, without changing any result:
+\code{power}, $S$, $S_\text{min}$, $\gamma_\text{min}$, $\zeta$, the indicator,
+$\tilde S$, $\tilde S_\text{min}$, $q$, $\gamma$, $\nu$, $p$, $\lambda_d$, $\xi$,
+$G$, and the output samples.
+
+Run the development set through it. For each signal, record the minimum, the
+maximum, the 0.1st and 99.9th percentiles, and a histogram of $\log_2|x|$.
+
+\textbf{Check:} with the probes enabled, the output is identical to the
+uninstrumented model (assert this). You can fill the first two columns of the
+specification table (\cref{tab:codesign:spec}). Expect power-like quantities to
+span more than \qty{100}{\dB}. That is the first sign they want a logarithmic
+or floating-point format rather than plain fixed point.
+
+\textbf{Effort:} 1--2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:frames]{Frame-configuration study (RQ2, H2)}
+Sweep the configurations in \cref{tab:workload:configs}, plus the thesis
+configuration with and without zero padding. The thesis \code{AudioConfig}
+already accepts other sizes, provided \code{hop = window/2} and
+\code{block = hop}. For \qty{16}{\kHz} runs, resample the input and the clean
+reference with \code{resample\_poly}.
+
+The step people forget is rescaling the time constants. IMCRA's smoothing
+factors, the decision-directed factor and the minimum-search window are all
+defined per frame. Keep their \emph{time constants} fixed when the frame period
+$T=H/f_s$ changes to $T'$:
+
+\begin{lstlisting}[style=py,caption={Keeping time constants fixed across frame configurations.}]
+from dataclasses import replace
+
+def rescale(imcra, wiener, T_old, T_new):
+    r = T_new / T_old                      # ratio of frame periods
+    a = lambda alpha: alpha ** r           # tau = -T/ln(alpha) stays fixed
+    v_new = max(1, round(imcra.v / r))     # keep U = 8 sub-windows, D*T fixed
+    return (replace(imcra, alpha_s=a(imcra.alpha_s), alpha_d=a(imcra.alpha_d), v=v_new),
+            replace(wiener, dd_alpha=a(wiener.dd_alpha)))
+\end{lstlisting}
+
+For each configuration, record PESQ, STOI and SI-SDR on the development set,
+together with the algorithmic latency and the state memory. Plot quality against
+latency and mark the configurations that dominate the others: they form the
+Pareto front (\cref{fig:codesign:schematic}, right).
+
+\textbf{Check:} the thesis configuration reproduces the baseline exactly. You
+can state H2's outcome: what removing the zero padding costs in PESQ. You have
+chosen a design point and written down why (decision point, week~4,
+\cref{ch:plan}).
+
+\textbf{Effort:} 3--4 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:fxlib]{Write a bit-true fixed-point library}
+Every fixed-point operation in the model goes through a few helper functions.
+The RTL later implements exactly the same rounding and saturation. Use numpy
+\code{int64} arrays, which have enough headroom for the products of two 32-bit
+values.
+
+\begin{lstlisting}[style=py,caption={The heart of \texttt{golden/fixedpoint.py}.}]
+import numpy as np
+
+def limits(word, signed):
+    return (-(1 << (word - 1)), (1 << (word - 1)) - 1) if signed else (0, (1 << word) - 1)
+
+def saturate(q, word, signed=True):
+    lo, hi = limits(word, signed)
+    return np.clip(q, lo, hi).astype(np.int64)
+
+def quantize(x, word, frac, signed=True):
+    """Real value(s) -> integer(s) in Q(word-frac).frac, round half up, saturate."""
+    q = np.floor(np.asarray(x, dtype=np.float64) * (1 << frac) + 0.5)
+    return saturate(q, word, signed)
+
+def requant(q, frac_in, word_out, frac_out, signed=True):
+    """Change the binary point of integer q, rounding half up, then saturate."""
+    shift = frac_in - frac_out
+    if shift > 0:
+        q = (q + (1 << (shift - 1))) >> shift      # arithmetic shift = floor
+    else:
+        q = q << (-shift)
+    return saturate(q, word_out, signed)
+
+def mul(a, fa, b, fb, word_out, frac_out, signed=True):
+    """Exact integer product, then one rounding and one saturation."""
+    return requant(a.astype(np.int64) * b.astype(np.int64), fa + fb,
+                   word_out, frac_out, signed)
+
+def to_real(q, frac):
+    return q.astype(np.float64) / (1 << frac)
+\end{lstlisting}
+
+Choose \emph{one} rounding mode and use it everywhere. Round-half-up (add half
+an LSB, then shift right) costs one adder in hardware, and that is what the code
+above does.
+
+\textbf{Check:} unit tests for exact representable values, rounding at the
+half-LSB boundary for positive and negative numbers, saturation at both limits,
+and \code{mul} against exact rational arithmetic (Python \code{fractions}) on
+random inputs. \textbf{Effort:} 1 day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:blocks]{Build the bit-accurate model, block by block, in hardware order}
+Write one module per hardware block: \file{golden/fx_stft.py},
+\file{golden/fx_imcra.py}, \file{golden/fx_wiener.py}, and
+\file{golden/fx_pipeline.py} to connect them. Quantise one block at a time and
+compare against float after each change. If you quantise everything at once and
+the quality collapses, you will not know why.
+
+\begin{enumerate}
+  \item \textbf{Window and framing.} The $\sqrt{\text{Hann}}$ window becomes a
+  ROM of quantised coefficients. By symmetry only half of it needs storing.
+  \item \textbf{FFT.} Model the \emph{hardware} algorithm exactly, not
+  \code{np.fft}. Write a radix-2 decimation-in-time FFT~\cite{cooley1965fft}
+  with quantised twiddle factors, and round after every butterfly. Add
+  \emph{block floating point} (O8): after each stage, if any value has grown
+  into the guard bits, shift the whole block right by one and increment a shared
+  exponent. The inverse FFT reuses the forward FFT through conjugation:
+  $\mathrm{IFFT}(X)=\overline{\mathrm{FFT}(\overline{X})}/N$.
+  \item \textbf{Power.} $|X_k|^2$ doubles the dynamic range in bits. This is
+  where you move to a logarithmic or small floating-point format for power-like
+  quantities (\cref{st:codesign:log}).
+  \item \textbf{IMCRA and Wiener.} Implement O3 (cache $\xi/(1+\xi)$), O4
+  (shared reciprocals via seed table + Newton--Raphson) and O1 (gain LUT,
+  \cref{st:codesign:lut}).
+  \item \textbf{Tilt and output gain} (O2), the gain multiply, the inverse FFT,
+  the synthesis window and overlap-add.
+\end{enumerate}
+
+\textbf{Check:} with very wide formats (for example 32 fractional bits
+everywhere and large tables), the model matches float to within about
+0.01 PESQ and 0.001 STOI. That shows the \emph{structure} is
+right before you start narrowing word lengths.
+
+\textbf{Effort:} 1.5--2 weeks. The FFT and block floating point take the most
+time.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:log]{Decide the representation of power-like quantities (O5)}
+$|X|^2$, $S$, $\tilde S$, their minima and $\lambda_d$ span a huge range.
+There are three candidate representations:
+\begin{enumerate}
+  \item \textbf{Wide fixed point} (about 32 bits or more). Simple, but expensive
+        in memory, and memory is 23 words per bin.
+  \item \textbf{Small custom floating point}, for example a 10-bit mantissa with
+        a 6-bit exponent. Its relative precision is constant across the range.
+  \item \textbf{Logarithmic}, for example $\log_2$ as a signed Q6.10 value.
+        Multiplications and divisions become additions and subtractions, and
+        comparisons stay exact.
+\end{enumerate}
+
+The minimum trackers, which hold 18 of the 23 state words, are a natural fit for
+the log domain. A minimum is unchanged by any monotone map, so
+$\min(\log a,\log b)=\log\min(a,b)$ exactly. The threshold tests in
+\file{imcra.py} also survive unchanged: $\gamma_\text{min}<\gamma_0$ becomes
+$\log_2 P - \log_2(B_{\min}S_\text{min}) < \log_2\gamma_0$.
+
+\emph{Recursive smoothing does not survive.} $\alpha\log S+(1-\alpha)\log P$ is
+the log of a \emph{geometric} mean, which is biased low compared with the
+arithmetic mean that IMCRA expects. For a single exponentially distributed
+periodogram bin the bias is about \qty{2.5}{\dB}, the Euler--Mascheroni
+constant in nepers. Smoothing reduces it, but it does not vanish.
+
+Evaluate two options:
+\begin{enumerate}[label=(\alph*)]
+  \item keep the smoothed quantities $S$, $\tilde S$, $\lambda_d$ in a small
+        floating-point format, and store only the tracker minima as
+        low-precision log values;
+  \item smooth in the log domain and re-fit the bias factor $B_{\min}$ so the
+        noise estimate is unbiased on the development set.
+\end{enumerate}
+
+\textbf{Check:} for your chosen option, the noise PSD estimate on the
+development set has a median error under about \qty{0.5}{\dB} against float,
+and the end metrics meet RQ1. \textbf{Effort:} 3--4 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:lut]{Gain LUT and control-plane mapping (O1, O2)}
+Replace $(\xi/(1+\xi))^\beta$ by a table that the control plane computes
+whenever $\beta$ or the gain floor changes:
+
+\begin{lstlisting}[style=py,caption={Gain table generation (control plane) and lookup (data plane).}]
+import numpy as np
+from golden.fixedpoint import quantize
+
+LOG2_STEP = 1 / 8            # LUT spacing: 1/8 of a log2 unit (about 0.38 dB)
+LOG2_MIN = -9.0              # about -27 dB, just below xi_min = -25 dB
+N_LUT = 256                  # covers 32 log2 units, about 96 dB
+
+def make_gain_lut(beta, floor):
+    log2_xi = LOG2_MIN + LOG2_STEP * np.arange(N_LUT)
+    xi = 2.0 ** log2_xi
+    g = np.maximum((xi / (1 + xi)) ** beta, floor)
+    return quantize(g, word=16, frac=13, signed=False)     # UQ3.13
+
+def lut_index(log2_xi_q, frac=10):
+    # log2(xi) held as signed Q6.10. A power-of-two step makes the index a
+    # subtraction and a shift -- no multiplier.
+    idx = (log2_xi_q - int(LOG2_MIN * (1 << frac))) >> (frac - 3)
+    return np.clip(idx, 0, N_LUT - 1)
+\end{lstlisting}
+
+Choosing the table spacing as a power of two in $\log_2$ units is a small
+co-design decision with a real payoff: the table index is a bit slice of the
+log-domain $\xi$, so no multiplier is needed. For the tilt (O2), precompute
+$r=10^{\text{tilt}/(20(K-1))}$ and form $g_k=g_\text{out}\,r^k$ with one multiply
+per bin. Repeated multiplication accumulates rounding error over the $K$ bins,
+so check the error at the last bin. Alternatively, add a constant per bin in the
+log domain.
+
+Sweep the table size (64--1024 entries), the $\xi$ range, and linear
+interpolation versus none.
+
+\textbf{Check:} applying the thesis's own parameter changes (for example
+$\beta$ from 1.0 to 1.94, then a tilt step) produces the same audio as the float
+model to within the RQ1 target. The table swap at a frame boundary produces no
+click: compare the difference signal around the switch.
+\textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:sweeps]{Word-length and approximation sweeps (RQ1, H1)}
+Now narrow the formats. Use the development set, and a fixed subset of it while
+iterating.
+\begin{enumerate}
+  \item \textbf{One factor at a time.} Vary one signal's word length (or one
+  table's size), keeping all others wide. Find the knee where quality starts to
+  fall (\cref{fig:codesign:schematic}, left).
+  \item \textbf{Joint.} Set every signal a little above its knee and run the
+  whole model. Quantisation errors add up, so you will usually need a bit or two
+  more than the one-at-a-time results suggest.
+  \item \textbf{Nonlinear functions.} Size the reciprocal seed table and the
+  number of Newton--Raphson iterations. One iteration roughly doubles the number
+  of correct bits. Size the $e^{-\nu}$ table (O7) over $\nu\in[0,16]$, or the
+  sigmoid rewrite of \cref{eq:workload:sigmoid}. Derive an accuracy target for
+  each function from the end metric, not from intuition.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=18mm},
+  width=0.47\textwidth,height=42mm,
+  tick label style={font=\sffamily\scriptsize},label style={font=\sffamily\scriptsize},
+  axis lines=left,xtick=\empty,ytick=\empty,clip=false]
+\nextgroupplot[xlabel={word length (bits)},ylabel={quality loss vs float},xmin=6,xmax=24,ymin=0,ymax=1.1]
+  \addplot[brand,thick,domain=6:24,samples=60] {exp(-(x-6)*0.55)};
+  \draw[pitc,dashed] (axis cs:6,0.1) -- (axis cs:24,0.1) node[right,font=\sffamily\tiny,text=pitc]{target};
+  \draw[-{Stealth},pitc] (axis cs:13,0.55) node[above,font=\sffamily\tiny,text=pitc]{knee} -- (axis cs:10.3,0.12);
+\nextgroupplot[xlabel={latency},ylabel={quality},xmin=0,xmax=10,ymin=0,ymax=10]
+  \addplot[only marks,mark=*,mark size=1.6pt,conceptc] coordinates {(2,3.5)(3.2,4.4)(4,6.3)(5.5,5.6)(6,7.5)(7.3,7.3)(8.2,8.4)(9,7.9)};
+  \addplot[brand,thick] coordinates {(2,3.5)(3.2,4.4)(4,6.3)(6,7.5)(8.2,8.4)};
+  \node[font=\sffamily\tiny,text=brand,anchor=west] at (axis cs:6.6,6.3) {Pareto front};
+\end{groupplot}
+\end{tikzpicture}
+\captionof{figure}{Schematic --- illustrative shape, not data. Left: quality loss
+against word length typically falls steeply and then flattens. Pick the smallest
+word length past the knee that meets the target. Right: configurations that are
+not beaten on both latency and quality form the Pareto front.}
+\label{fig:codesign:schematic}
+\end{center}
+
+\textbf{Check:} a joint configuration meets RQ1 on the development set. A table
+lists every signal with its format and the experiment that justifies it. You can
+state H1's outcome. \textbf{Effort:} 1 week (mostly computer time; run the
+sweeps overnight).
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:nlp]{Quantise the NLP heads (H3, first part of RQ4)}
+Use the thesis pipeline's cached sentence embeddings (\code{SentenceEmbedder}
+writes them to its \code{cache\_dir}) and the thesis's fixed train/test split.
+Fit logistic regression and the thesis's linear SVM on the same split, then
+quantise the weights to int8 with one scale per row:
+
+\begin{lstlisting}[style=py,caption={Post-training int8 quantisation of a linear head.}]
+import numpy as np
+
+def quantize_head(W, b, X):
+    s_w = np.abs(W).max(axis=1, keepdims=True) / 127        # per-row scale
+    Wq = np.clip(np.round(W / s_w), -127, 127).astype(np.int8)
+    s_x = 1.0 / 127                                         # |x_i| <= 1 (L2-normalised)
+    Xq = np.clip(np.round(X / s_x), -127, 127).astype(np.int8)
+    acc = Xq.astype(np.int32) @ Wq.astype(np.int32).T      # int32 accumulators
+    return acc * (s_w.T * s_x) + b                          # dequantised scores
+
+# Logistic regression: 6 rows -> argmax.  Linear SVC (one-vs-one): 15 rows,
+# then the same pairwise voting as sklearn -- check your voting code on the
+# float weights first: it must reproduce clf.predict exactly.
+\end{lstlisting}
+
+Report macro-F1 (float and int8), the multiply--accumulate count (\num{4608}
+against \num{11520}), and the severity MAE with the Ridge weights quantised the
+same way. Replace the SVM's Platt/pairwise-coupling probability with a
+margin-based confidence (O9). For example, use the difference between the top
+two scores, and pick its threshold on the training folds so the confidence gate
+behaves like the thesis's.
+
+\textbf{Check:} the float numbers reproduce the thesis (test macro-F1 0.957 for
+the SVM). You can state H3's outcome. \textbf{Effort:} 2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:codesign:freeze]{Freeze the specification and export golden vectors}
+Write \file{docs/spec.md}: the chosen frame configuration, every signal's format
+(\cref{tab:codesign:spec}), every table's size and contents rule, the rounding
+mode, the block-floating-point rule, and the parameter-update semantics
+(table bank swap at a frame boundary).
+
+Then export \emph{golden vectors} with \file{golden/vectors.py} for the
+verification phase. For each test signal (the synthetic set plus a few
+VoiceBank utterances), write one file per probe point: the block inputs and
+outputs per frame, as integers, in \code{.npy} or one-hex-word-per-line
+\code{.hex} files. These are the contract between Python and RTL.
+
+\begin{center}\footnotesize
+\captionof{table}{Specification table template --- fill one row per signal and table.}
+\label{tab:codesign:spec}
+\begin{tabularx}{\textwidth}{@{}llllL@{}}
+\toprule
+Signal & Symbol & Format & Measured range & Evidence (experiment) \\
+\midrule
+Input sample & $x[n]$ & Q1.15 & & \file{experiments/...} \\
+FFT data path & $X_k$ & & & \\
+Power & $|X_k|^2$ & & & \\
+Tracker minima & $S_\text{min}$, $\tilde S_\text{min}$ & & & \\
+Noise PSD & $\lambda_d$ & & & \\
+A priori SNR & $\xi$ & & & \\
+Gain & $G_k$ & UQ3.13 & & \\
+Gain LUT & --- & 256 $\times$ 16 bit & & \\
+\ldots & & & & \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Check:} a fresh clone can regenerate every vector and every plot from
+one command. Tag the repository \code{spec-v1}. \textbf{Effort:} 2 days.
+\end{stepbox}
+
+% =========================================================================
+\section{Pitfalls}\label{sec:codesign:pitfalls}
+
+\begin{pitfallbox}[Pitfalls in Phase 1]
+\begin{itemize}
+  \item \textbf{Using \code{np.fft} in the \enquote{bit-accurate} model.} The
+        hardware FFT rounds after every stage. If the model does not, the RTL
+        can never match it.
+  \item \textbf{Silent float leaks.} A single \code{np.log2} or \code{/} on a
+        fixed-point path makes the model no longer bit-accurate. Grep for them,
+        and assert integer dtypes at block boundaries.
+  \item \textbf{Comparing frame configurations without rescaling time
+        constants.} You would be comparing different algorithms.
+  \item \textbf{Optimising one signal at a time and stopping there.} Errors add
+        up. Always finish with a joint run.
+  \item \textbf{Tuning on the test set.} Use the development set for every
+        choice.
+  \item \textbf{Scope creep.} Phase~1 is fascinating and could last forever.
+        It ends in week~7 (\cref{ch:plan}).
+\end{itemize}
+\end{pitfallbox}
+
+\begin{readbox}
+Fixed-point arithmetic and quantisation noise:
+Widrow and Koll\'ar~\cite{widrow2008quantization}. Word-length optimisation:
+Constantinides \etal~\cite{ch12-13:constantinides2003wordlength}. Elementary
+function approximation (tables, polynomials, Newton--Raphson):
+Muller~\cite{muller2016elementary}. IMCRA itself:
+Cohen~\cite{cohen2003imcra}. Integer-only inference:
+Jacob \etal~\cite{jacob2018quantization}.
+\end{readbox}
+
+\begin{donebox}[Milestone M1 is reached when]
+\begin{checklist}
+  \item The dynamic-range profile and the frame-configuration study are complete and plotted.
+  \item The time-constant rescaling is implemented and tested.
+  \item \file{golden/} is bit-accurate (integer-only on fixed-point paths) and unit-tested.
+  \item The chosen formats meet RQ1 on the development set; H1 and H2 have recorded outcomes.
+  \item The gain LUT, tilt mapping and table-swap semantics are specified and tested.
+  \item The NLP heads are quantised; H3 has a recorded outcome.
+  \item \file{docs/spec.md} is complete, golden vectors are exported, and the repository is tagged \code{spec-v1}.
+\end{checklist}
+\end{donebox}
