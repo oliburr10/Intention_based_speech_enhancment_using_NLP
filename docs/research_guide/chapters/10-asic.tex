@@ -1,3 +1,281 @@
 \chapter{Phase 5B --- VLSI and ASIC Track}\label{ch:asic}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{17--22} \quad Milestone M4 (Track B)
+
+Track B takes part of your verified RTL through a complete open-source
+\emph{RTL-to-GDS} flow: synthesis to standard cells, floorplanning, placement,
+clock-tree synthesis, routing, timing sign-off and physical verification. The
+result is a layout that could be manufactured, with area, timing and power from
+a real 130\,nm process. Optionally, a small block goes to an actual shuttle via
+Tiny Tapeout.
+
+\begin{whybox}
+FPGA numbers say little about a chip. LUTs are not gates, and FPGA power is
+dominated by the programmable fabric. This track answers RQ3 in the units chip
+designers use: square millimetres, nanoseconds of slack, and microjoules per
+frame. It also gives you hands-on experience of every step of a digital IC
+back end, which is the core of digital VLSI roles.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+M3: verified, FPGA-proven RTL; the cocotb regression; a Linux machine (or
+macOS) where you can install Nix or Docker
+& LibreLane configuration in \file{asic/}; synthesis area sweeps; a
+DRC/LVS-clean layout of the chosen block; timing and power reports, with power
+from real switching activity; an FPGA versus ASIC comparison \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =========================================================================
+\section{The flow}\label{sec:asic:flow}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\sffamily\scriptsize,node distance=3.5mm,
+  s/.style={draw=brand,fill=brandlight,rounded corners=1mm,minimum height=9mm,text width=15mm,align=center},
+  a/.style={-{Stealth[length=1.8mm]},line width=0.6pt}]
+  \node[s] (rtl) {RTL\\(SV $\rightarrow$ Verilog)};
+  \node[s,right=of rtl] (syn) {Synthesis\\Yosys};
+  \node[s,right=of syn] (fp) {Floorplan,\\power grid};
+  \node[s,right=of fp] (pl) {Placement};
+  \node[s,right=of pl] (cts) {Clock tree};
+  \node[s,right=of cts] (rt) {Routing};
+  \node[s,right=of rt] (so) {STA, DRC, LVS\\$\rightarrow$ GDS};
+  \foreach \x/\y in {rtl/syn,syn/fp,fp/pl,pl/cts,cts/rt,rt/so} \draw[a] (\x) -- (\y);
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror},conceptc] (fp.south west) ++(0,-0.15) -- ([yshift=-0.15cm]rt.south east) node[midway,below=5pt,text=conceptc]{OpenROAD};
+  \draw[decorate,decoration={brace,amplitude=4pt},conceptc] ([yshift=0.15cm]rtl.north west) -- ([yshift=0.15cm]so.north east) node[midway,above=5pt,text=conceptc]{orchestrated by LibreLane, with an open PDK (sky130, IHP SG13G2, GF180MCU)};
+\end{tikzpicture}
+\caption{The open-source RTL-to-GDS flow.}
+\label{fig:asic:flow}
+\end{figure}
+
+\textbf{LibreLane}~\cite{librelane,ch12-13:librelanedocs}, the successor of
+OpenLane~2, runs the whole flow with a single command. The steps are Yosys for
+synthesis~\cite{yosys}, OpenROAD for floorplanning, placement, clock tree,
+routing and static timing analysis~\cite{ajayi2019openroad}, and Magic, KLayout
+and Netgen for physical verification. It works with several open
+\emph{process design kits} (PDKs), which describe a real manufacturing process
+(\cref{tab:asic:pdks}).
+
+\begin{table}[htbp]
+\centering\small
+\caption{Open PDKs you can use. Check each PDK's current documentation for
+details such as available SRAM macros and library corners.}
+\label{tab:asic:pdks}
+\begin{tabularx}{\textwidth}{@{}lL@{}}
+\toprule
+PDK & Notes \\
+\midrule
+SkyWater SKY130~\cite{sky130pdk} & 130\,nm. The most widely documented open PDK, with many examples and tutorials. Used by Tiny Tapeout. \\
+IHP SG13G2~\cite{ihpsg13g2} & 130\,nm BiCMOS from IHP (Germany). Well integrated with LibreLane, and also offered on Tiny Tapeout shuttles. \\
+GF180MCU & 180\,nm from GlobalFoundries. Larger and slower, but also supported. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{conceptbox}{What you are measuring}
+\begin{itemize}
+  \item \textbf{Area}: the standard-cell area and the core area after placement.
+        Utilisation is their ratio.
+  \item \textbf{Timing}: setup and hold slack at your target clock, from static
+        timing analysis with real wire parasitics after routing. Positive slack
+        means the design meets timing.
+  \item \textbf{Power}: dynamic power, $\alpha CV^2f$ summed over all nets
+        (\cref{ch:primer}), plus leakage. Dynamic power depends on the
+        \emph{switching activity} $\alpha$. With default activity the number is
+        a guess; with activity from simulating real audio it is an estimate
+        worth reporting.
+\end{itemize}
+\end{conceptbox}
+
+% =========================================================================
+\section{What to harden}\label{sec:asic:what}
+
+Do not try to harden the whole \code{ise\_top}. Its state memory (tens of
+kilobytes) would be built from flip-flops unless you use SRAM macros, and that
+would dominate the area and runtime and teach you little. Choose instead:
+\begin{itemize}
+  \item \textbf{\code{bin\_pipeline}}, with the state memory left
+        \emph{outside}: expose its read and write ports as pins. This hardens
+        the arithmetic, which is the interesting part for RQ1 and RQ3.
+  \item and/or \textbf{\code{head\_engine}} (\cref{ch:mlaccel}) with a small
+        weight memory.
+\end{itemize}
+For the memory itself, estimate area from an SRAM macro of the chosen PDK, or
+from a memory compiler such as OpenRAM~\cite{guthaus2016openram}, and state
+which you used. Check what each PDK currently provides.
+
+% =========================================================================
+\section{Steps}\label{sec:asic:steps}
+
+\begin{stepbox}[label=st:asic:install]{Install LibreLane and run the example}
+Follow the LibreLane documentation. The recommended installation uses Nix:
+install Nix, clone the LibreLane repository, enter its shell, then run the
+smoke test and the bundled example. Docker is an alternative.
+\begin{lstlisting}[style=shell]
+git clone https://github.com/librelane/librelane
+nix-shell librelane/shell.nix        # or the current command from the docs
+librelane --smoke-test
+librelane --run-example spm          # a small serial-parallel multiplier
+\end{lstlisting}
+The PDK is downloaded automatically on first use.
+
+\textbf{Check:} the example finishes and you can open its final layout in
+KLayout. Find the timing, area and power reports in the run directory and read
+them. \textbf{Effort:} half a day to a day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:sv]{Make your RTL digestible for the flow}
+Yosys's built-in SystemVerilog support covers a subset of the language. Test your
+block with \code{yosys -p "read\_verilog -sv \ldots; synth -top \ldots"}. If it
+fails, convert to Verilog with \tool{sv2v}, or use a full SystemVerilog front end
+plugin for Yosys. Re-run your cocotb regression on the converted Verilog: if
+the conversion changed behaviour, you want to know now.
+
+\textbf{Check:} the converted design passes the same tests as the original.
+\textbf{Effort:} half a day to two days, depending on the constructs you used.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:sweep]{Synthesis-only design-space exploration}
+Before running the full flow, use fast synthesis runs to answer \enquote{how
+much area does each bit cost?} Synthesize \code{bin\_pipeline} against the
+PDK's standard-cell library for several word-length configurations from
+Phase~1, and record the cell area:
+\begin{lstlisting}[style=shell]
+yosys -p "read_verilog bin_pipeline.v; synth -top bin_pipeline; \
+          dfflibmap -liberty $LIB; abc -liberty $LIB; stat -liberty $LIB"
+\end{lstlisting}
+Plot area against word length next to the Phase~1 plot of quality against word
+length. Together they show the price of each bit of quality, which is the
+heart of RQ1 and RQ3.
+
+\textbf{Check:} a table and plot of area for at least four configurations.
+\textbf{Effort:} 1--2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:config]{Configure and run the full flow}
+Create \file{asic/bin_pipeline/config.json} (JSON or YAML; see the LibreLane
+configuration reference for current variable names):
+\begin{lstlisting}[style=plain]
+{
+  "DESIGN_NAME": "bin_pipeline",
+  "VERILOG_FILES": "dir::src/*.v",
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 50
+}
+\end{lstlisting}
+Start with a relaxed clock (\qty{50}{\ns}, i.e.\ \qty{20}{\MHz}). Your design
+needs only a few MHz, so you are learning the flow, not chasing frequency. Run
+it (\code{librelane config.json}, adding \code{--pdk} for a non-default PDK),
+then read the reports.
+
+\textbf{Check:} the flow completes with no DRC or LVS errors and positive setup
+and hold slack. Record the core area, the utilisation and the critical path.
+\textbf{Effort:} 2--4 days, including the first failures.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:power]{Power from real switching activity}
+Default activity factors make power numbers meaningless for a design whose
+datapath is idle most of the frame. Instead:
+\begin{enumerate}
+  \item simulate the synthesized gate-level netlist, using the PDK's cell
+        models, on a few frames of real audio from your golden vectors, and
+        dump a VCD;
+  \item load the final netlist, its parasitics and the VCD into OpenSTA (part of
+        OpenROAD), and report power.
+\end{enumerate}
+Convert to \emph{energy per frame}:
+$E_\text{frame}=P\times T_\text{frame}$, with $P$ averaged over whole frames,
+idle time included.
+
+\textbf{Check:} you can explain the split between dynamic and leakage power,
+and why the idle part of each frame matters. Repeat with default activity and
+report how different the two numbers are. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:dse]{Clock, parallelism and voltage}
+Use your synthesis and power results to explore the classic low-power
+trade-off~\cite{chandrakasan1992lowpower}:
+\begin{itemize}
+  \item a folded design at a higher clock versus a parallel design at a lower
+        clock, compared on area and on energy per frame;
+  \item the effect of supply voltage, where the PDK provides library corners at
+        more than one voltage. Open PDKs offer only a few corners. Where a
+        voltage is missing, use the first-order $E\propto V^2$ scaling and say
+        so clearly.
+\end{itemize}
+
+\textbf{Check:} a small table that ranks at least two architectures on energy
+per frame, with the method stated. \textbf{Effort:} 2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:compare]{Compare FPGA and ASIC}
+Put the FPGA numbers from \cref{ch:fpga} next to the ASIC numbers: resources
+against area, PL power against ASIC power, and energy per frame. Explain the
+differences in a paragraph: programmable routing and look-up tables against
+fixed standard cells. This comparison is one of the most useful paragraphs in
+your report.
+
+\textbf{Effort:} 1 day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:asic:tt]{Optional: tape out a small block with Tiny Tapeout}
+Tiny Tapeout~\cite{tinytapeout} pools many small designs on one shared chip.
+A design occupies one or more \emph{tiles} (a single tile is on the order of
+$\qty{160}{\micro\m}\times\qty{100}{\micro\m}$ in sky130) and has a small fixed
+set of input, output and bidirectional pins. That is far too small for the
+datapath with its memory, but enough for a single unit: the
+\code{recip\_unit}, the \code{qmul\_sat} plus gain-table interpolation, or a
+slice of the \code{head\_engine}'s MAC array with a serial interface.
+
+The process uses a template repository whose GitHub Actions run the hardening
+flow for you. Check current shuttles, deadlines, tile sizes, pin limits and
+costs on the Tiny Tapeout website, as they change between rounds.
+
+\textbf{Check:} your block hardens in the template's CI and passes its
+gate-level test. Submit it if the timing and budget work for you.
+\textbf{Effort:} 1 week.
+\end{stepbox}
+
+% =========================================================================
+\section{Pitfalls}\label{sec:asic:pitfalls}
+
+\begin{pitfallbox}[Pitfalls in Track B]
+\begin{itemize}
+  \item \textbf{Hardening memory as flip-flops by accident.} Check the cell
+        report. Thousands of flip-flops means a RAM became registers.
+  \item \textbf{Chasing frequency.} You need megahertz, not hundreds of
+        megahertz. Use a relaxed clock and spend the time on power and area.
+  \item \textbf{Reporting power from default activity.} Use real activity, or
+        label the number clearly as a rough estimate.
+  \item \textbf{Hold violations after clock-tree synthesis.} These are normal in
+        early runs. The flow inserts hold buffers, but read why they appear.
+  \item \textbf{Over-claiming.} 130\,nm open-PDK numbers are not hearing-aid
+        numbers. Commercial hearing-aid chips use smaller, low-leakage
+        processes, custom memories and aggressive power gating. Report your
+        results as relative comparisons and trends.
+\end{itemize}
+\end{pitfallbox}
+
+\begin{readbox}
+CMOS VLSI design: Weste and Harris~\cite{weste2010cmos}; Rabaey
+\etal~\cite{rabaey2003digital}. Low-power design:
+Chandrakasan \etal~\cite{chandrakasan1992lowpower}. A structured, hands-on
+course on the open-source ASIC flow: Zero to ASIC~\cite{ch12-13:zerotoasic}.
+LibreLane documentation~\cite{ch12-13:librelanedocs}; OpenROAD~\cite{ajayi2019openroad}.
+\end{readbox}
+
+\begin{donebox}[Milestone M4 (Track B) is reached when]
+\begin{checklist}
+  \item The chosen block passes the full flow with no DRC or LVS errors and positive slack.
+  \item The area-versus-word-length sweep is complete and plotted next to the Phase~1 quality sweep.
+  \item Power and energy per frame come from real switching activity.
+  \item At least two architectures are compared on energy per frame.
+  \item The FPGA versus ASIC comparison is written.
+\end{checklist}
+\end{donebox}

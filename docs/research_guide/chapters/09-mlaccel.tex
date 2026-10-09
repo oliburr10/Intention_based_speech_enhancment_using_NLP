@@ -1,3 +1,271 @@
 \chapter{Phase 5A --- ML Acceleration Track}\label{ch:mlaccel}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{17--22} \quad Milestone M4 (Track A)
+
+Track A brings the \emph{control plane} into hardware. Your thesis found that
+the six intent classes are linearly separable in the sentence-embedding space,
+which means the classifier and severity heads are tiny matrix--vector products.
+The expensive part is the encoder that produces the embedding. This track
+builds a small, verified int8 accelerator for the heads, then attacks the
+encoder with one of two research routes.
+
+\begin{whybox}
+This track answers RQ4 and completes H3. It also teaches the core of ML
+hardware: quantisation, multiply--accumulate arrays, dataflows, memory
+bandwidth, and the roofline view of performance. These are the same concepts
+used in commercial neural-network accelerators~\cite{sze2017efficient,jouppi2017tpu},
+practised at a scale you can finish in six weeks.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+M3 (working FPGA system); Phase~1 head quantisation results (H3); the thesis
+NLP pipeline and dataset; cocotb flow
+& \code{head\_engine} RTL, verified and integrated; an encoder or audio-intent
+study with an accuracy--cost trade-off curve; cycles, latency, memory and
+energy-estimate tables \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =========================================================================
+\section{Characterise the control-plane workload}\label{sec:ml:workload}
+
+Start from \cref{tab:workload:control}. Encoder compute is about 2.4~GFLOP per
+sentence for mpnet and about 0.3~GFLOP for MiniLM (estimates). The heads need a
+few thousand multiply--accumulates. Two consequences shape this track:
+
+\begin{itemize}
+  \item \textbf{Throughput is irrelevant; latency and energy per inference
+  matter.} A user complains at most every few seconds. A few hundred milliseconds
+  per sentence feels instant. What matters is how much energy each inference
+  costs, and whether the model fits in on-chip memory.
+  \item \textbf{Memory bandwidth dominates large models.} The Zynq-7020 has
+  roughly 630\,KB of block RAM. Even int8 MiniLM (about 23\,MB) cannot live on
+  chip, so its weights must stream from DDR for every sentence. The roofline
+  model~\cite{williams2009roofline} makes this precise. Performance is bounded
+  by $\min(\text{peak compute},\ \text{bandwidth}\times\text{arithmetic
+  intensity})$. A matrix--vector product reuses each weight once, about one MAC
+  per weight byte at int8, so it is bandwidth-bound. Processing all of a
+  sentence's roughly 14 tokens together reuses each weight 14 times.
+\end{itemize}
+
+\begin{conceptbox}{Int8 affine quantisation}
+A real value $r$ is represented by an integer $q$ via $r \approx s\,(q-z)$, with
+a scale $s$ and a zero point $z$~\cite{jacob2018quantization}. For weights,
+symmetric quantisation ($z=0$) with one scale per output row is standard. A dot
+product becomes an int8$\times$int8 product accumulated in int32, then rescaled
+once: $\sum_i r_{w,i}r_{x,i}\approx s_w s_x\sum_i q_{w,i}q_{x,i}$. The rescale
+can itself be a fixed-point multiply and shift, so inference is integer-only.
+\end{conceptbox}
+
+% =========================================================================
+\section{Route A (required): the \texttt{head\_engine}}\label{sec:ml:head}
+
+\begin{stepbox}[label=st:ml:headchoice]{Choose the head and freeze its integer model}
+From your Phase~1 results (\cref{ch:codesign}), choose between logistic
+regression (6 rows) and the one-vs-one SVM (15 rows plus voting). Unless the SVM
+is clearly more accurate after quantisation, choose logistic regression: it has
+2.5$\times$ fewer MACs and a simple margin confidence (O9). Fold the Ridge
+severity weights in as a seventh row, giving one $7\times768$ int8 matrix of
+\qty{5.25}{\kibi\byte}.
+
+Write \file{nlp_hw/head_model.py}: a bit-exact integer model that takes the
+same int8 inputs as the hardware and returns the class, a margin and a severity
+in Q0.15 (clipped to $[0,1]$). This is the head's golden model.
+
+\textbf{Check:} on the thesis test split, the integer model's macro-F1 and MAE
+equal your Phase~1 int8 results. \textbf{Effort:} 1 day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:ml:headrtl]{Design and build the engine}
+A simple, effective design:
+\begin{itemize}
+  \item \textbf{Weight memory.} One block RAM, $P$ int8 values wide. Load it
+        once from the ARM over AXI.
+  \item \textbf{Input buffer.} 768 int8 values, written by the ARM per
+        sentence.
+  \item \textbf{Datapath.} A \code{mac\_array} of $P$ lanes ($P=8$ or 16). Each
+        cycle it multiplies $P$ weights by $P$ inputs and adds them, with an
+        adder tree, into one int32 accumulator for the current row.
+  \item \textbf{Post-processing.} After each row: add the bias, rescale with a
+        fixed-point multiplier, and track the running argmax and the
+        second-best score for the margin.
+\end{itemize}
+Cycles per inference $\approx 7\times768/P$: 672 cycles for $P=8$, which is
+\qty{6.7}{\micro\s} at \qty{100}{\MHz}. Expose \reg{start}, \reg{done},
+\reg{class}, \reg{margin} and \reg{severity} registers.
+
+\textbf{Check:} cocotb against \file{nlp_hw/head_model.py} on all 1106
+sentences: identical class, margin and severity. Lint-clean; resource log
+updated. \textbf{Effort:} 1--1.5 weeks.
+\end{stepbox}
+
+\begin{stepbox}[label=st:ml:headint]{Integrate on the PYNQ}
+Add \code{head\_engine} to the FPGA design next to \code{ise\_top}. The ARM, or
+your laptop in option~A, now sends only the 768-value embedding. The hardware
+returns class and severity, and the parameter mapping writes the enhancer
+registers.
+
+\textbf{Check:} end-to-end, typed complaint to audible change, now with the
+heads in hardware. Measured latency of the head is negligible next to the
+encoder. Say so in your report, with numbers. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+% =========================================================================
+\section{Then choose one research route}\label{sec:ml:routes}
+
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Route B --- compress the text encoder]
+  Keep typed or recognised text, and make the encoder small enough for edge
+  hardware. Lower risk: everything can be measured on a laptop, and the
+  hardware deliverable is a matrix-multiply engine.
+  \item[Route C --- recognise intent directly from audio]
+  Replace text plus encoder with a small network that classifies spoken
+  complaints from audio features computed by \emph{your own} STFT. This is closer
+  to a real hearing aid and removes the speech-recognition step the thesis
+  listed as a limitation. It is also more data-hungry and riskier.
+\end{description}
+
+\subsection{Route B steps}
+
+\begin{stepbox}[label=st:ml:minilm]{Swap and quantise the encoder}
+Re-embed the thesis dataset with \code{all-MiniLM-L6-v2}~\cite{wang2020minilm},
+retrain the heads on the thesis split, and measure macro-F1. Apply dynamic int8
+quantisation to the encoder's linear layers, with PyTorch or ONNX Runtime, and
+measure again. Integer-only transformer inference is
+possible~\cite{kim2021ibert,zafrir2019q8bert}, but start with the easy wins.
+
+\textbf{Check:} a table of encoder, precision, macro-F1, MAE, parameter count,
+model size and CPU latency per sentence. This is the start of your RQ4
+trade-off curve. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:ml:distil]{Distil a tiny domain-specific student}
+Your domain is narrow: complaints about hearing-aid sound. Train a small
+student, for example 2--4 transformer layers of width 128, or even a small CNN
+over word embeddings, to \emph{reproduce the mpnet embeddings} (an MSE or
+cosine loss on the embedding). Use a large set of unlabelled, in-domain
+sentences, generated in the same way as the thesis dataset. Then put the
+unchanged thesis heads on top.
+
+A domain vocabulary of a few thousand words keeps the embedding table small
+enough for on-chip memory. That is a co-design decision worth reporting.
+
+\textbf{Check:} a curve of macro-F1 against parameter count, from mpnet through
+MiniLM down to your students. Note where it falls below the RQ4 target.
+\textbf{Effort:} 1--1.5 weeks.
+\end{stepbox}
+
+\begin{stepbox}[label=st:ml:matmul]{A matrix-multiply engine for the student}
+Map the student's matrix multiplies onto a small \emph{weight-stationary
+systolic array}~\cite{kung1982systolic,chen2017eyeriss}. For example, a
+$4\times4$ or $8\times8$ grid of int8 MAC cells: weights stay in the cells, and
+activations flow through. Implement \emph{one tile} in RTL, verify it with cocotb
+against numpy, and estimate cycles for the whole student from the tile's
+throughput and the layer shapes.
+
+Tool-based alternatives: hls4ml~\cite{duarte2018hls4ml,ch12-13:hls4mldocs} and
+FINN with Brevitas~\cite{umuroglu2017finn,brevitas}. Check their current support
+for the layer types you use, especially attention, before relying on them.
+
+\textbf{Check:} the tile is bit-exact. The cycle and memory estimate for the
+full student is backed by the tile measurement. \textbf{Effort:} 1.5 weeks.
+\end{stepbox}
+
+\subsection{Route C steps}
+
+\begin{stepbox}[label=st:ml:audiodata]{Build a spoken-intent dataset}
+No spoken hearing-aid-complaint dataset exists, so you will build one:
+\begin{enumerate}
+  \item synthesise the 1106 complaint sentences with several text-to-speech
+        voices;
+  \item mix them with noise at several SNRs, for example DEMAND noises as in
+        VoiceBank+DEMAND;
+  \item record a small \emph{real} test set from volunteers, with informed
+        consent (\cref{ch:evaluation}).
+\end{enumerate}
+Consider pre-training on a public spoken-language-understanding dataset such as
+Fluent Speech Commands~\cite{lugosch2019fsc}, or on keyword spotting with
+Speech Commands~\cite{warden2018speechcommands}.
+
+\textbf{Check:} train, development and test splits with no speaker or sentence
+overlap, and a real-speech test set kept separate. \textbf{Effort:} 1 week.
+\end{stepbox}
+
+\begin{stepbox}[label=st:ml:dscnn]{A tiny audio-intent model on your own features}
+Compute log-mel features from the STFT magnitudes your enhancer already
+produces, with the mel filterbank as a sparse ROM. Note the tension: the
+enhancer's short low-latency frames give coarse frequency resolution. Test
+whether that is enough, or whether a separate longer analysis window is needed.
+
+Train a depthwise-separable CNN of the kind used for keyword
+spotting~\cite{zhang2017helloedge}, with tens of thousands of parameters rather
+than millions. Use quantisation-aware training (for example Brevitas), and
+deploy it with hls4ml or FINN, or with your own MAC array.
+
+\textbf{Check:} accuracy against SNR on synthetic speech, and separately on real
+recordings. Report the gap honestly; generalising from TTS to real voices is the
+main risk. \textbf{Effort:} 2 weeks.
+\end{stepbox}
+
+% =========================================================================
+\section{Reporting}\label{sec:ml:report}
+
+\begin{center}\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabularx}{\textwidth}{@{}Lccccll@{}}
+\toprule
+Model & Params & Precision & macro-F1 & MAE & Latency (cycles) & Weights \\
+\midrule
+mpnet + SVM (thesis) & 110\,M & fp32 & 0.957 & 0.100 & laptop & 440\,MB \\
+mpnet + LR, int8 head (\texttt{head\_engine}) & & & & & & \\
+MiniLM + LR & & & & & & \\
+MiniLM int8 + LR & & & & & & \\
+Your student + LR & & & & & & \\
+Audio DS-CNN (Route C) & & & & & & \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+To estimate energy, use published figures for the energy of each arithmetic
+operation and each memory access, for example those collected by
+Horowitz~\cite{ch12-13:horowitz2014energy}. State clearly that they are 45\,nm
+estimates, not measurements, and use them only to compare designs with each
+other.
+
+\begin{pitfallbox}[Pitfalls in Track A]
+\begin{itemize}
+  \item \textbf{Optimising the heads too much.} They are not the bottleneck. The
+        \code{head\_engine} is a learning vehicle and a verified building block;
+        the research question is in the encoder or the audio model.
+  \item \textbf{Leaking the test split.} Distillation and TTS data must never
+        contain test sentences.
+  \item \textbf{Mismatched quantisation between training and hardware.} If your
+        quantised model and your RTL round differently, F1 in Python means
+        nothing. Keep a bit-exact integer model, as in Phase~1.
+  \item \textbf{Counting FLOPs and ignoring memory.} For batch-1 inference,
+        moving weights usually costs more time and energy than arithmetic.
+\end{itemize}
+\end{pitfallbox}
+
+\begin{readbox}
+The definitive tutorial on efficient DNN hardware: Sze \etal~\cite{sze2017efficient},
+and the book~\cite{sze2020book}. MIT's \emph{Hardware Architectures for Deep
+Learning} course materials~\cite{ch12-13:mit65930}. Quantisation methods:
+Gholami \etal~\cite{ch12-13:gholami2021quant}. Keyword spotting on
+microcontrollers: Zhang \etal~\cite{zhang2017helloedge}. Systolic arrays:
+Kung~\cite{kung1982systolic}.
+\end{readbox}
+
+\begin{donebox}[Milestone M4 (Track A) is reached when]
+\begin{checklist}
+  \item \code{head\_engine} is bit-exact on all sentences, integrated, and measured on the FPGA.
+  \item One route (B or C) has a complete accuracy--cost trade-off curve.
+  \item One hardware block for that route (matrix tile, or the audio model's accelerator) is verified.
+  \item RQ4 is answered in the results table, with estimates clearly marked.
+\end{checklist}
+\end{donebox}

@@ -1,3 +1,188 @@
 \chapter{Evaluation Methodology and Research Rigour}\label{ch:evaluation}
 
-PLACEHOLDER --- this chapter is being written.
+Your thesis already showed good instincts: stratified cross-validation, a test
+set touched exactly once, and ties broken on generalisation. This chapter
+carries the same discipline into the hardware project. It covers what to
+measure, what to compare against, how to tell a real difference from noise, and
+how to make every number reproducible.
+
+% =========================================================================
+\section{What to measure}\label{sec:eval:metrics}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Metric catalogue. Use the same definitions everywhere in the project.}
+\label{tab:eval:metrics}
+\begin{tabularx}{\textwidth}{@{}lLL@{}}
+\toprule
+Group & Metric & Notes \\
+\midrule
+Speech quality & PESQ (wideband)~\cite{itu2007pesqwb}, STOI~\cite{taal2011stoi}, SI-SDR~\cite{leroux2019sisdr}, $\Delta$SNR & Against the clean reference, after alignment; per utterance; PESQ at \qty{16}{\kHz} \\
+Implementation fidelity & Bit-exactness against golden; output SNR of fixed point against float & Separates \enquote{the hardware is wrong} from \enquote{the precision is too low} \\
+Intent & Macro-F1, per-class F1, severity MAE & Thesis split; test set used once \\
+Timing & Cycles per frame (max and mean), algorithmic and end-to-end latency (ms) & Measured, not estimated, by M3 \\
+FPGA cost & LUT, FF, DSP, BRAM; WNS at the target clock & From Vivado reports \\
+ASIC cost & Cell and core area (mm$^2$), setup and hold slack & From LibreLane reports \\
+Power and energy & Dynamic and static power (mW); energy per frame (\textmu J) & State the activity source \\
+Memory & State and table size (KiB); accesses per frame & From the spec and RTL \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{conceptbox}{Know what your metrics can and cannot say}
+PESQ and STOI were designed and validated for particular conditions. They
+predict average listener judgements for normal-hearing listeners on telephone
+and enhancement tasks. Neither is a perfect proxy for what a hearing-aid user
+perceives. Use them to compare \emph{configurations of the same algorithm}, which
+is exactly what RQ1 and RQ2 need, rather than to claim absolute perceptual
+quality.
+\end{conceptbox}
+
+% =========================================================================
+\section{Baselines}\label{sec:eval:baselines}
+
+Every result needs a reference point:
+\begin{itemize}
+  \item \textbf{Unprocessed noisy input}: does enhancement help at all?
+  \item \textbf{Float64 thesis model}: the reference for RQ1 and RQ2.
+  \item \textbf{Float32 thesis model}: a sanity check of how much precision
+        actually matters.
+  \item \textbf{Standard Wiener filter} ($\beta=1$, no tilt): isolates the
+        effect of the parametric control.
+  \item For intent: \textbf{the thesis's mpnet + SVM} at macro-F1 0.957 and MAE
+        0.100.
+\end{itemize}
+
+% =========================================================================
+\section{Experimental design}\label{sec:eval:design}
+
+\begin{itemize}
+  \item \textbf{Development versus test.} Make every choice (word lengths, table
+        sizes, frame configuration, quantisation scales) on the development
+        subset. Run the test set once, at the end, for the reported numbers.
+        This is the same rule as your thesis's test-once discipline.
+  \item \textbf{One factor at a time, then jointly.} Single-factor sweeps find
+        each knee. A joint run checks that the errors do not add up beyond the
+        target.
+  \item \textbf{Report by condition.} VoiceBank+DEMAND's test set has four input
+        SNRs. Effects often differ between low and high SNR, so report each
+        condition as well as the overall mean.
+  \item \textbf{One change per experiment.} Each experiment folder records
+        exactly one hypothesis, one configuration and one commit.
+\end{itemize}
+
+% =========================================================================
+\section{Statistics: is the difference real?}\label{sec:eval:stats}
+
+Most comparisons in this project are \emph{paired}: the same 824 utterances,
+processed two ways. Use that pairing:
+\begin{enumerate}
+  \item compute the per-utterance difference $d_i$, for example
+        $\text{PESQ}_\text{fixed}-\text{PESQ}_\text{float}$;
+  \item report the mean $\bar d$ with a 95\% \emph{bootstrap} confidence
+        interval: resample the 824 differences with replacement many times and
+        take the 2.5th and 97.5th percentiles of the means;
+  \item for \enquote{is there any difference at all?}, use a Wilcoxon
+        signed-rank test on the $d_i$;
+  \item for RQ1's equivalence question, check that the \emph{whole} confidence
+        interval lies within the tolerance ($|\Delta\text{PESQ}|\le0.1$). This is
+        stronger, and more honest, than \enquote{not significantly different}.
+\end{enumerate}
+
+\begin{lstlisting}[style=py,caption={Paired bootstrap confidence interval for a mean difference.}]
+import numpy as np
+
+def paired_ci(a, b, n_boot=10_000, seed=0):
+    d = np.asarray(a) - np.asarray(b)
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(d), size=(n_boot, len(d)))
+    means = d[idx].mean(axis=1)
+    return d.mean(), np.percentile(means, [2.5, 97.5])
+\end{lstlisting}
+
+For the NLP results, the test set has only about 166 sentences. Report how many
+predictions changed between float and int8, not just the change in F1. A
+difference of one or two sentences is within noise.
+
+% =========================================================================
+\section{Reproducibility}\label{sec:eval:repro}
+
+Follow the \enquote{good enough practices} of scientific
+computing~\cite{ch12-13:wilson2017goodenough,ch12-13:sandve2013tenrules}:
+\begin{itemize}
+  \item Every experiment has a configuration file, a fixed seed and a commit
+        hash, stored with its raw results (CSV), not just the plots.
+  \item One command per figure. A \code{make figures} target, or a script,
+        regenerates every table and plot from raw results.
+  \item Record tool versions: Python packages (lock file), Verilator, cocotb,
+        Vivado, the PYNQ image, LibreLane and the PDK version.
+  \item Tag the repository at every milestone.
+  \item Raw audio stays out of git, but record how to obtain it (the dataset DOI
+        and a script).
+\end{itemize}
+
+% =========================================================================
+\section{Presenting results}\label{sec:eval:present}
+
+Plan your key tables and figures now, and fill them as you go:
+\begin{itemize}
+  \item quality against word length, per signal and joint (RQ1);
+  \item quality against latency, with state memory (RQ2): the Pareto plot;
+  \item resources and area against word length, next to the quality plot (RQ3);
+  \item energy per frame for the architectures you compared (RQ3, H4);
+  \item macro-F1 against model size and precision (RQ4).
+\end{itemize}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Template for the headline results table (fill in at M5).}
+\label{tab:eval:headline}
+\begin{tabularx}{\textwidth}{@{}LCCCCC@{}}
+\toprule
+Configuration & PESQ & STOI & Latency & State & Energy/frame \\
+\midrule
+Noisy input & & & --- & --- & --- \\
+Float64 thesis (48\,kHz, 2048 FFT) & & & 21.33\,ms & 23,575 words & --- \\
+Fixed point, chosen spec (golden = RTL) & & & & & \\
+FPGA (measured) & = above & = above & & & \\
+ASIC (Track B, estimated) & = above & = above & & & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Threats to validity}\label{sec:eval:threats}
+
+A strong report names its own weaknesses before a reviewer does. Discuss at
+least these:
+\begin{itemize}
+  \item \textbf{Objective metrics are not perception}, least of all for
+        hearing-impaired listeners. The thesis's open calibration problem
+        remains open.
+  \item \textbf{The data is not hearing-aid data.} VoiceBank+DEMAND is studio
+        speech with added noise, not a hearing-aid microphone in a real room.
+  \item \textbf{The intent data is typed and LLM-generated}, as the thesis
+        noted, and the TTS data in Route C is not real speech.
+  \item \textbf{FPGA power is not ASIC power}, and \textbf{130\,nm open-PDK
+        results are not modern hearing-aid silicon}.
+  \item \textbf{Estimates are not measurements.} Every number has a label.
+\end{itemize}
+
+% =========================================================================
+\section{Ethics and data}\label{sec:eval:ethics}
+
+If you record anyone's voice, for latency tests or Route C, get informed
+consent, say what the recordings are for, store them securely, and delete them
+when the project ends. Recordings of identifiable people are personal data under
+GDPR. Check your university's guidance before recording anyone. Keep public
+datasets under their licences, and cite them.
+
+\begin{donebox}[Your evaluation is sound when]
+\begin{checklist}
+  \item Every number in the report has a definition, a method, a dataset split and a commit.
+  \item Every comparison has a baseline and a confidence interval.
+  \item The test set was used once, at the end.
+  \item Every figure regenerates from raw results with one command.
+  \item The threats to validity are written down.
+\end{checklist}
+\end{donebox}
