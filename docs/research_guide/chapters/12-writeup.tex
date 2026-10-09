@@ -1,3 +1,164 @@
 \chapter{Writing It Up, Publishing and Presenting}\label{ch:writeup}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{21--24} \quad Milestone M5
+
+Results that nobody can read do not exist. This chapter covers how to write the
+project up as a paper-style report, where it could go, how to release the
+repository, and how to turn it into CV lines and interview stories. Do not leave
+writing to the end: each milestone already produces material for one section.
+
+% =========================================================================
+\section{Write as you go}\label{sec:writeup:asyougo}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Which milestone feeds which section of the report.}
+\label{tab:writeup:sections}
+\begin{tabularx}{\textwidth}{@{}lL@{}}
+\toprule
+Milestone & Draft this section right after reaching it \\
+\midrule
+M0 & Experimental setup: data, metrics, float baseline \\
+M1 & Algorithm--hardware co-design: frame study, precision study, the specification \\
+M2 & Architecture and verification: block diagram, frame schedule, bit-exactness \\
+M3 & Implementation and results on the FPGA: latency, resources, power, demo \\
+M4 & Track results: ML accelerator, or ASIC implementation \\
+M5 & Introduction, discussion, conclusion, abstract --- written \emph{last} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Structure of the report}\label{sec:writeup:structure}
+
+A hardware-for-signal-processing paper usually follows this shape:
+\begin{enumerate}
+  \item \textbf{Introduction.} The problem (intent-controlled hearing-aid DSP
+        must fit a tiny power budget), the gap (the thesis ran on a laptop), the
+        contributions in three or four bullet points, and the results in one
+        sentence each.
+  \item \textbf{Background.} IMCRA, the parametric Wiener filter and the thesis
+        system, all brief and cited.
+  \item \textbf{Workload characterisation.} The \cref{ch:workload} analysis in
+        condensed form. Reviewers love a cost model.
+  \item \textbf{Co-design.} Frame configuration, precision and approximations,
+        and the gain-LUT control interface, each with the experiment that
+        justified it.
+  \item \textbf{Architecture and verification.}
+  \item \textbf{Results.} FPGA, plus ML or ASIC, against baselines, with
+        confidence intervals.
+  \item \textbf{Discussion.} What flipped under hardware constraints, threats to
+        validity (\cref{ch:evaluation}), and future work, including the
+        perceptual calibration study.
+  \item \textbf{Conclusion.}
+\end{enumerate}
+
+Figures you must have:
+\begin{itemize}
+  \item the two-plane architecture;
+  \item the block diagram;
+  \item the frame schedule;
+  \item quality against bits;
+  \item quality against latency (Pareto);
+  \item area or resources against bits;
+  \item the headline results table;
+  \item a photo of the demo setup.
+\end{itemize}
+
+\begin{tipbox}[Writing advice that works]
+Write one message per paragraph, and put it in the first sentence. Put the old,
+known information at the start of a sentence and the new information at the
+end~\cite{ch12-13:gopen1990science}. Write the outline first, then the figures,
+then the text~\cite{ch12-13:whitesides2004writing}. For computer-science style
+writing in general, see Zobel~\cite{ch12-13:zobel2014writing}. Before you
+start, answer the Heilmeier questions: what are you trying to do, how is it done
+today, what is new, and who cares~\cite{ch12-13:heilmeier}. They make an
+excellent first page.
+\end{tipbox}
+
+% =========================================================================
+\section{Where it could go}\label{sec:writeup:venues}
+
+A well-executed project of this kind can be submitted to a student-friendly
+venue. Check each venue's current call for papers, deadlines and page limits:
+\begin{itemize}
+  \item \textbf{IEEE NorCAS} (Nordic Circuits and Systems Conference): a
+        regional conference with a natural fit for a Danish circuits project.
+  \item \textbf{IEEE SiPS} (Workshop on Signal Processing Systems): exactly the
+        signal-processing-hardware intersection.
+  \item \textbf{IEEE ISCAS}, \textbf{EUSIPCO} or \textbf{ICASSP}: larger, more
+        competitive venues. Check whether there are student or late-breaking
+        tracks.
+  \item \textbf{arXiv}: post a preprint once your supervisor agrees.
+\end{itemize}
+Within your university, the project is also an excellent basis for an MSc
+thesis proposal, or can be formalised as a project course. Ask your study
+administration which formats exist for your programme~\cite{ch12-13:dtuprojectcourses}.
+
+% =========================================================================
+\section{Release the repository}\label{sec:writeup:release}
+
+\begin{itemize}
+  \item A README with the results table at the top, one-command reproduction,
+        and the demo video linked.
+  \item A tagged release (\code{v1.0}). Archive it for a DOI if you want it to
+        be citable, and add a \file{CITATION.cff} file~\cite{ch12-13:githubcitation}.
+  \item Licence, data instructions (how to obtain VoiceBank+DEMAND), and pinned
+        tool versions.
+\end{itemize}
+
+% =========================================================================
+\section{CV lines and interview stories}\label{sec:writeup:cv}
+
+Write CV lines with \emph{your measured numbers}. Never fill them in before you
+have measured them. Templates:
+\begin{itemize}
+  \item \enquote{Designed and verified a real-time speech-enhancement datapath
+        (IMCRA + parametric Wiener) in SystemVerilog, bit-exact with a Python
+        golden model across [N] utterances; [X] ms algorithmic latency, [Y]
+        LUTs / [Z] BRAMs on a Zynq-7020.}
+  \item \enquote{Reduced per-bin state memory by [k]$\times$ through log-domain
+        minimum tracking and frame reconfiguration at a PESQ cost of [d].}
+  \item \enquote{Built an int8 matrix--vector accelerator for intent
+        classification, preserving macro-F1 within [d] of float.} (Track A)
+  \item \enquote{Took a DSP block through an open-source RTL-to-GDS flow
+        (LibreLane, [PDK]); [A] mm$^2$, [E] \textmu J/frame from gate-level
+        activity.} (Track B)
+\end{itemize}
+
+Prepare five stories of about two minutes each. Each one is a situation, what
+you did, and what you measured:
+\begin{enumerate}
+  \item \textbf{A decision that flipped.} mpnet versus MiniLM, or zero padding:
+        right for a laptop, wrong for a chip, and how you showed it
+        (\cref{ch:workload}).
+  \item \textbf{The interface trick.} How language control became a table write
+        and two registers.
+  \item \textbf{Bit-exact verification.} Why exact equality, and how the golden
+        model made debugging systematic.
+  \item \textbf{A hard bug.} The first divergence, how you localised it, and the
+        regression test you added.
+  \item \textbf{A trade-off with numbers.} Latency against quality against
+        memory, from your Pareto plot.
+\end{enumerate}
+
+% =========================================================================
+\section{Talking to industry}\label{sec:writeup:industry}
+
+Hearing-aid manufacturers in Denmark, such as Demant (Oticon), GN and WS
+Audiology, build exactly the kind of low-power DSP and ML systems this project
+studies. Oticon also has a dedicated research centre,
+Eriksholm~\cite{ch12-13:eriksholm}. Your thesis collaboration with Oticon is a
+natural first contact: share the demo video and the results table with your
+thesis contacts, and ask for twenty minutes of feedback. Engineers respond well
+to specific, measured work and a clear question.
+
+\begin{donebox}[Milestone M5 is reached when]
+\begin{checklist}
+  \item The report is complete, and your supervisor has given feedback that you have addressed.
+  \item The repository is released as \code{v1.0}, and reproduces the headline results from one command.
+  \item The demo video and results table are linked in the README.
+  \item The CV lines contain only measured numbers.
+  \item You have rehearsed the five interview stories out loud.
+\end{checklist}
+\end{donebox}

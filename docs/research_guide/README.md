@@ -51,7 +51,7 @@ preamble.tex        packages, colours, step/tip/pitfall boxes, macros
 frontmatter/        title page, how to use this guide
 chapters/           one file per chapter
 appendices/         one file per appendix
-bib/                core.bib (shared) + one .bib per chapter group
+bib/                core.bib (main references) + extra.bib (reading list, tools)
 scripts/            measure_workload.py
 tools/              check_chapter.sh
 ```

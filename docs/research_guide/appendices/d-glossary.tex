@@ -1,3 +1,87 @@
 \chapter{Glossary}\label{app:glossary}
 
-PLACEHOLDER --- this chapter is being written.
+\begin{description}[style=unboxed,leftmargin=0pt,itemsep=3pt,font=\normalfont\bfseries]
+\item[A priori SNR ($\xi$)] Estimated ratio of clean-speech power to noise power in a bin; computed with the decision-directed method in the thesis.
+\item[A posteriori SNR ($\gamma$)] Ratio of the observed (noisy) power to the estimated noise power in a bin.
+\item[Activity factor ($\alpha$)] Fraction of clock cycles in which a node switches; scales dynamic power.
+\item[ASIC] Application-specific integrated circuit: a chip designed for one function.
+\item[AXI4-Lite / AXI4-Stream] ARM bus protocols: memory-mapped registers / valid-ready streaming.
+\item[Bit-accurate model] Software model that computes exactly the integers the hardware will hold.
+\item[Bit-exact] RTL and model produce identical integers for identical inputs.
+\item[Block floating point (BFP)] A group of values sharing one exponent; common in FFTs.
+\item[Block RAM (BRAM)] Dedicated SRAM blocks in an FPGA (36\,Kbit each on the Zynq-7000).
+\item[Butterfly] The basic two-input, two-output operation of an FFT.
+\item[Clock domain crossing (CDC)] Passing signals between circuits driven by unrelated clocks; needs synchronisers or FIFOs.
+\item[Clock gating] Stopping the clock to idle logic to save dynamic power.
+\item[Clock tree synthesis (CTS)] Building the buffered network that distributes the clock with low skew.
+\item[cocotb] Python framework for writing hardware testbenches.
+\item[Control plane] The part of a system that configures the data plane; here, the intent path.
+\item[CORDIC] Shift-and-add algorithm for trigonometric, hyperbolic, exponential and logarithmic functions.
+\item[Critical path] The slowest register-to-register path; it sets the maximum clock frequency.
+\item[Data plane] The part of a system that processes the data stream; here, the audio path.
+\item[Decision-directed estimator] A priori SNR estimate mixing the previous frame's clean estimate with the current observation (Ephraim--Malah).
+\item[Development set] Data used for tuning choices; distinct from the test set.
+\item[DMA] Direct memory access: hardware that moves data between memory and a peripheral without the CPU.
+\item[DRC / LVS] Design rule check / layout versus schematic: physical verification steps before tape-out.
+\item[DSP slice] Hard multiply--accumulate block in an FPGA.
+\item[Dynamic power] Power from switching: $\alpha CV^2f$.
+\item[Energy per frame] Energy consumed to process one audio frame; the right efficiency metric for a fixed-rate workload.
+\item[Fixed point] Integers interpreted with an implied binary point; see Q-format.
+\item[Folding] Mapping several operations onto one shared hardware unit over several cycles.
+\item[Formal verification] Proving properties hold for all inputs, rather than testing selected ones.
+\item[FPGA] Field-programmable gate array: reconfigurable hardware.
+\item[Functional coverage] Measure of which intended scenarios a test suite exercised.
+\item[Gain floor] Minimum Wiener gain (0.05 in the thesis) to avoid musical noise.
+\item[GDS(II)] File format of the final chip layout.
+\item[Golden model / golden vectors] Reference model and the test data it produces, against which RTL is checked.
+\item[Hardware-in-the-loop (HIL)] Running the real hardware on stored test data and comparing with the model.
+\item[HLS] High-level synthesis: compiling C++ (or similar) into hardware.
+\item[Hold / setup slack] Timing margin for the earliest / latest data arrival at a register.
+\item[I2S] Serial audio interface between converters and digital logic.
+\item[II (initiation interval)] Cycles between successive inputs accepted by a pipelined unit.
+\item[IMCRA] Improved minima controlled recursive averaging: the thesis's noise PSD estimator.
+\item[Int8 quantisation] Representing weights and activations as 8-bit integers with a scale (and zero point).
+\item[Latency (algorithmic)] Delay caused by the algorithm's buffering; one window length for 50\% overlap STFT processing.
+\item[Leakage] Static current flowing through transistors that are off.
+\item[LibreLane] Open-source RTL-to-GDS flow (successor of OpenLane 2).
+\item[Lint] Static checks of RTL code for suspicious constructs.
+\item[Logarithmic number system] Representing numbers by their logarithms; multiplication becomes addition.
+\item[LUT] (1) Lookup table holding precomputed function values. (2) The basic logic element of an FPGA.
+\item[MAC] Multiply--accumulate operation or unit.
+\item[Macro-F1] F1 score averaged over classes with equal weight.
+\item[Minimum statistics / tracker] Noise estimation by tracking the minimum of a smoothed power spectrum over a window.
+\item[Musical noise] Tonal artefacts from isolated spectral bins switching on and off between frames.
+\item[Newton--Raphson reciprocal] Iteration $y\leftarrow y(2-dy)$ that doubles the number of correct bits per step.
+\item[OpenROAD] Open-source physical design tools (floorplan, placement, CTS, routing, STA).
+\item[Overlay] A PYNQ FPGA design (bitstream plus metadata) loadable from Python.
+\item[Pareto front] Set of configurations not beaten on all objectives by any other.
+\item[PDK] Process design kit: everything needed to design for one manufacturing process.
+\item[PESQ] Perceptual evaluation of speech quality (ITU-T P.862 / P.862.2 wideband).
+\item[Ping-pong buffer] Two buffers alternating between being filled and being processed.
+\item[Pipelining] Inserting registers to split a long computation into stages.
+\item[PL / PS] Programmable logic / processing system of a Zynq SoC.
+\item[Q-format (Q$m$.$F$)] Fixed-point notation: $m$ integer bits (including sign), $F$ fractional bits.
+\item[Real-time factor] Processing time divided by audio duration; below 1 means faster than real time.
+\item[Retiming] Moving registers across logic without changing function, to balance paths.
+\item[Roofline model] Performance bound $\min(\text{peak compute}, \text{bandwidth}\times\text{arithmetic intensity})$.
+\item[RTL] Register-transfer level: hardware described as registers and the logic between them.
+\item[Saturation] Clamping a result to the representable range instead of wrapping.
+\item[SDF FFT] Single-path delay feedback: a pipelined FFT architecture.
+\item[SI-SDR] Scale-invariant signal-to-distortion ratio.
+\item[Sky130 / SG13G2] Open 130\,nm PDKs from SkyWater (with Google) and IHP.
+\item[SQNR] Signal-to-quantisation-noise ratio; about $6.02N+1.76$\,dB for an $N$-bit full-scale sine.
+\item[SRAM] Static random-access memory.
+\item[STA] Static timing analysis: checking all timing paths without simulation.
+\item[Standard cell] Pre-designed logic gate in a PDK's library.
+\item[STOI] Short-time objective intelligibility measure.
+\item[Systolic array] Grid of processing elements passing data to neighbours each cycle.
+\item[Testbench] Code that drives a design and checks its outputs.
+\item[Tiny Tapeout] Shared-shuttle programme for small open-source chip designs.
+\item[Twiddle factor] Complex exponential $W_N^k$ used in FFT butterflies.
+\item[Valid/ready handshake] Flow-control protocol: a transfer happens when both are high.
+\item[Verilator] Open-source SystemVerilog simulator and linter.
+\item[VoiceBank+DEMAND] Standard speech-enhancement benchmark (clean/noisy pairs at 48\,kHz).
+\item[WNS] Worst negative slack: the most-violating timing path (positive means timing met).
+\item[WOLA] Weighted overlap-add: windowed analysis/synthesis with perfect reconstruction when the window condition holds.
+\item[Yosys] Open-source synthesis tool.
+\end{description}

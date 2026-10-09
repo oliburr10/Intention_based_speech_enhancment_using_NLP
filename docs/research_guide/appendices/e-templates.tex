@@ -1,3 +1,99 @@
 \chapter{Templates}\label{app:templates}
 
-PLACEHOLDER --- this chapter is being written.
+Copy these into your repository (\file{docs/templates/}) and use them as-is.
+They are deliberately short: a template you actually fill in beats a perfect one
+you skip.
+
+\section*{Lab notebook entry --- \texttt{docs/notebook/YYYY-MM-DD.md}}
+\begin{lstlisting}[style=plain]
+# 2027-02-14 (week 5, Phase 1)
+
+Goal today:      log-domain trackers -- does 8-bit storage meet RQ1?
+Starting commit: 3f2a9c1
+
+## Did
+- Implemented fx_imcra.log_tracker (bias-encoded log2, 8 bits)
+- Ran experiments/023-log-trackers on dev subset (200 utts)
+
+## Results
+- dPESQ = -0.03 [-0.04, -0.02] vs float; dSTOI = -0.002
+- Noise PSD median error 0.31 dB
+
+## Problems / surprises
+- Edge bins k=0,1 biased high -- check smoothing zero-padding
+
+## Next
+- Fix edge bins; rerun; then joint run with 16-bit S, S~, lambda
+\end{lstlisting}
+
+\section*{Experiment record --- \texttt{experiments/NNN-name/notes.md}}
+\begin{lstlisting}[style=plain]
+# Experiment 023: log-domain minimum trackers
+
+Question:    Can the tracker minima be stored as 8-bit log2 values?
+Hypothesis:  Yes; |dPESQ| <= 0.05 on the dev set (part of H1)
+Config:      config.yaml (this folder)     Commit: 3f2a9c1    Seed: 0
+Data:        dev subset, 200 utterances (list in dev_ids.txt)
+Command:     python -m golden.sweep --config experiments/023-log-trackers/config.yaml
+Results:     results.csv (per utterance), summary.md (means + 95% CIs)
+Conclusion:  Supported / not supported, because ...
+Next step:   ...
+\end{lstlisting}
+
+\section*{Weekly status report (one page, for your supervisor)}
+\begin{lstlisting}[style=plain]
+Week 9 of 26 -- Phase 2 (RTL)        Plan status: on track / 1 week behind / ...
+
+Done this week:     - recip_unit bit-exact (V2), min_tracker bit-exact (V3)
+Planned, not done:  - gain_lut commit test (blocked: AXI write ordering bug)
+Next week:          - fix AXI bug; start bin_pipeline stages 1-3
+Risks (from register): R2 FFT complexity -- unchanged; R7 Vivado host -- resolved
+Decision needed:    - LR or SVM head for Track A? (data: Phase 1 table 3)
+\end{lstlisting}
+
+\section*{Design review checklist (before a block is called done)}
+\begin{checklist}
+  \item Ports, widths and formats match \file{docs/spec.md}.
+  \item Lint-clean with \code{-Wall}; no inferred latches; memories inferred as RAM.
+  \item One reset style; all registers reset or deliberately left without reset.
+  \item Rounding and saturation via the shared helpers only.
+  \item Parameters read by the datapath are shadowed and latched at frame boundaries.
+  \item A testbench exists, passes on two simulators, and appears in the verification plan.
+  \item Resource numbers recorded in \file{docs/resources.md}.
+\end{checklist}
+
+\section*{Verification plan row}
+\begin{center}\footnotesize
+\begin{tabularx}{\textwidth}{@{}lLLLl@{}}
+\toprule
+ID & Feature & Test (file) & Pass criterion & Status \\
+\midrule
+V\textit{n} & & \file{tb/...} & & planned / passing / failing \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section*{Specification row}
+\begin{center}\footnotesize
+\begin{tabularx}{\textwidth}{@{}llllL@{}}
+\toprule
+Signal & Symbol & Format & Range (measured) & Evidence (experiment) \\
+\midrule
+ & & Q\textit{m}.\textit{F} & & \file{experiments/NNN-...} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section*{Milestone report (one page)}
+\begin{lstlisting}[style=plain]
+Milestone M2 -- RTL bit-exact in simulation        Date:        Tag: m2-bit-exact
+
+Exit criteria (from Chapter 13)          Evidence
+- [x] all blocks lint-clean               CI run #212
+- [x] ise_top bit-exact, 6 utterances     tb/top/test_utterances.py, log
+- [ ] coverage gaps explained             2 open items (see verification_plan.md)
+
+What went well / what was hard:
+Deviations from plan (and why):
+Changes to plan for next phase:
+\end{lstlisting}

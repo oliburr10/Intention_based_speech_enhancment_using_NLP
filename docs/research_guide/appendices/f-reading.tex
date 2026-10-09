@@ -1,3 +1,115 @@
 \chapter{Annotated Reading List}\label{app:reading}
 
-PLACEHOLDER --- this chapter is being written.
+Grouped by phase. \textbf{[M]} must-read for this project, \textbf{[U]} useful
+when you reach that point, \textbf{[D]} deep-dive if you want more. Full
+details are in the bibliography.
+
+\section*{Foundations (Part I)}
+\begin{itemize}
+  \item \textbf{[M]} Harris \& Harris, \emph{Digital Design and Computer
+        Architecture}~\cite{harris2021ddca} --- the clearest introduction to
+        digital logic and HDLs.
+  \item \textbf{[M]} Parhi, \emph{VLSI Digital Signal Processing
+        Systems}~\cite{parhi1999vlsidsp} --- pipelining, folding, retiming:
+        the vocabulary of DSP architecture.
+  \item \textbf{[U]} Kaeslin, \emph{Top-Down Digital VLSI
+        Design}~\cite{ch12-13:kaeslin2014topdown} --- architecture to gates,
+        with an engineer's view of trade-offs.
+  \item \textbf{[U]} Horowitz, \enquote{Computing's energy
+        problem}~\cite{ch12-13:horowitz2014energy} --- why memory access
+        dominates energy.
+  \item \textbf{[D]} Weste \& Harris~\cite{weste2010cmos}; Rabaey
+        \etal~\cite{rabaey2003digital} --- CMOS circuits in depth.
+\end{itemize}
+
+\section*{The thesis algorithms}
+\begin{itemize}
+  \item \textbf{[M]} Cohen, IMCRA~\cite{cohen2003imcra}; Ephraim \&
+        Malah~\cite{ephraim1984mmse} --- re-read with \enquote{what does this cost
+        in hardware?} in mind.
+  \item \textbf{[U]} Loizou, \emph{Speech Enhancement}~\cite{loizou2013se};
+        Martin, minimum statistics~\cite{martin2001minstat}.
+  \item \textbf{[U]} Stone \& Moore on tolerable hearing-aid
+        delay~\cite{stone1999delay,stone2008delay} --- the evidence behind RQ2.
+  \item \textbf{[D]} Kates, \emph{Digital Hearing Aids}~\cite{kates2008hearingaids}.
+\end{itemize}
+
+\section*{Phase 1 --- fixed point and co-design}
+\begin{itemize}
+  \item \textbf{[M]} Widrow \& Koll\'ar, \emph{Quantization
+        Noise}~\cite{widrow2008quantization} --- when the uniform-noise model
+        holds and when it does not.
+  \item \textbf{[U]} Constantinides \etal, word-length
+        optimisation~\cite{ch12-13:constantinides2003wordlength}.
+  \item \textbf{[U]} Muller, \emph{Elementary Functions}~\cite{muller2016elementary}
+        --- tables, polynomials and Newton--Raphson done properly.
+  \item \textbf{[U]} Oppenheim \& Schafer~\cite{oppenheim2010dtsp} --- FFT
+        algorithms, real-input FFTs.
+\end{itemize}
+
+\section*{Phases 2--3 --- RTL and verification}
+\begin{itemize}
+  \item \textbf{[M]} Sutherland \etal, \emph{SystemVerilog for
+        Design}~\cite{sutherland2006svdesign}; Cummings on non-blocking
+        assignments~\cite{cummings2000nonblocking}.
+  \item \textbf{[M]} cocotb documentation~\cite{ch12-13:cocotbdocs} and the
+        Verilator guide~\cite{ch12-13:verilatorguide}.
+  \item \textbf{[U]} Garrido, survey of pipelined FFT
+        architectures~\cite{ch12-13:garrido2022fft}; He \& Torkelson,
+        R2\textsuperscript{2}SDF~\cite{he1996r22sdf}.
+  \item \textbf{[U]} HDLBits~\cite{ch12-13:hdlbits} for Verilog practice;
+        Project~F~\cite{ch12-13:projectf} for FPGA tutorials; the ZipCPU
+        blog~\cite{ch12-13:zipcpu} for formal verification of real designs.
+  \item \textbf{[U]} SymbiYosys documentation~\cite{ch12-13:sbydocs}.
+  \item \textbf{[D]} Spear \& Tumbush, \emph{SystemVerilog for
+        Verification}~\cite{ch12-13:spear2012svverif}.
+\end{itemize}
+
+\section*{Phase 4 --- FPGA}
+\begin{itemize}
+  \item \textbf{[M]} PYNQ documentation~\cite{ch12-13:pynqdocs} and support
+        forum~\cite{ch12-13:pynqforum}.
+  \item \textbf{[U]} \emph{The Zynq Book}~\cite{ch12-13:crockett2014zynq}.
+  \item \textbf{[U]} Meyer-Baese, \emph{DSP with FPGAs}~\cite{meyerbaese2014fpgadsp}.
+  \item \textbf{[U]} Vivado supported operating systems~\cite{ch12-13:ug973}.
+\end{itemize}
+
+\section*{Track A --- ML acceleration}
+\begin{itemize}
+  \item \textbf{[M]} Sze \etal, \enquote{Efficient processing of deep neural
+        networks}~\cite{sze2017efficient} (and the book~\cite{sze2020book}).
+  \item \textbf{[M]} Jacob \etal, integer-only inference~\cite{jacob2018quantization}.
+  \item \textbf{[U]} MIT 6.5930/1 course materials~\cite{ch12-13:mit65930};
+        Gholami \etal, quantisation survey~\cite{ch12-13:gholami2021quant}.
+  \item \textbf{[U]} Kung, systolic arrays~\cite{kung1982systolic}; Jouppi
+        \etal, TPU~\cite{jouppi2017tpu}; Chen \etal, Eyeriss~\cite{chen2017eyeriss};
+        Williams \etal, roofline~\cite{williams2009roofline}.
+  \item \textbf{[U]} hls4ml~\cite{duarte2018hls4ml,ch12-13:hls4mldocs};
+        FINN~\cite{umuroglu2017finn}; Brevitas~\cite{brevitas}.
+  \item \textbf{[D]} MiniLM~\cite{wang2020minilm}, DistilBERT~\cite{sanh2019distilbert},
+        I-BERT~\cite{kim2021ibert}, Q8BERT~\cite{zafrir2019q8bert}; keyword
+        spotting~\cite{zhang2017helloedge}; Fluent Speech
+        Commands~\cite{lugosch2019fsc}; MLPerf Tiny~\cite{banbury2021mlperftiny}.
+\end{itemize}
+
+\section*{Track B --- ASIC}
+\begin{itemize}
+  \item \textbf{[M]} LibreLane documentation~\cite{ch12-13:librelanedocs};
+        Zero to ASIC course~\cite{ch12-13:zerotoasic}.
+  \item \textbf{[U]} OpenROAD~\cite{ajayi2019openroad}; OpenRAM~\cite{guthaus2016openram};
+        Tiny Tapeout~\cite{tinytapeout}.
+  \item \textbf{[U]} Chandrakasan \etal, low-power CMOS design~\cite{chandrakasan1992lowpower}.
+\end{itemize}
+
+\section*{Research and writing}
+\begin{itemize}
+  \item \textbf{[M]} Wilson \etal, \enquote{Good enough practices in scientific
+        computing}~\cite{ch12-13:wilson2017goodenough}; Sandve \etal, ten rules
+        for reproducible research~\cite{ch12-13:sandve2013tenrules}.
+  \item \textbf{[U]} Gopen \& Swan, \enquote{The science of scientific
+        writing}~\cite{ch12-13:gopen1990science}; Whitesides, \enquote{Writing a
+        paper}~\cite{ch12-13:whitesides2004writing}; Zobel~\cite{ch12-13:zobel2014writing}.
+  \item \textbf{[U]} Peyton Jones, \enquote{How to write a great research
+        paper}~\cite{ch12-13:peytonjones2010paper}; Alley, scientific
+        presentations~\cite{ch12-13:alley2013craft}.
+\end{itemize}

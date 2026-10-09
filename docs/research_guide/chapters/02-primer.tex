@@ -1,3 +1,352 @@
 \chapter{A Hardware Primer for a DSP and ML Engineer}\label{ch:primer}
 
-PLACEHOLDER --- this chapter is being written.
+You already know the signal processing and the machine learning. This chapter
+gives you the hardware concepts this project uses, each tied to a specific line
+of your thesis code, with pointers to where to read more. Read it once quickly,
+then come back to each section when a phase needs it.
+
+% =========================================================================
+\section{From algorithm to hardware: what changes}\label{sec:primer:change}
+
+In Python, you pay for time, and everything else is nearly free. In hardware,
+you pay for \emph{area} (silicon, or FPGA resources), \emph{energy} (battery
+life) and \emph{design effort}, and you meet time as a hard deadline counted in
+clock cycles. Four habits change:
+\begin{itemize}
+  \item \textbf{Numbers have a width you choose.} There is no free float64.
+        Every bit costs area and energy (\cref{sec:primer:numbers}).
+  \item \textbf{Operations are not equal.} An addition is cheap, a
+        multiplication moderate, a division or \code{exp} expensive
+        (\cref{sec:primer:arith}).
+  \item \textbf{Memory costs more than arithmetic.} Fetching an operand from
+        memory can cost far more energy than computing with it
+        (\cref{sec:primer:memory}).
+  \item \textbf{Everything happens in parallel.} Hardware is a circuit, not a
+        sequence of statements. You decide how much of it to build and how to
+        share it over time (\cref{sec:primer:arch}).
+\end{itemize}
+
+% =========================================================================
+\section{Number representation}\label{sec:primer:numbers}
+
+\begin{conceptbox}{Fixed point and Q-format}
+A $W$-bit two's-complement integer $q$ represents the real value
+$x = q\cdot2^{-F}$, where $F$ is the number of fractional bits. The notation
+\textbf{Q$m$.$F$} means $m$ integer bits, including the sign, and $F$
+fractional bits, with $W=m+F$. Signed Q$m$.$F$ covers $[-2^{m-1},\,2^{m-1}-2^{-F}]$
+with resolution $2^{-F}$. The unsigned form UQ$m$.$F$ covers $[0,\,2^m-2^{-F}]$.
+Examples: audio in Q1.15 covers $[-1,1)$; a gain in UQ3.13 covers $[0,8)$ with
+resolution $1.2\times10^{-4}$.
+
+When a result exceeds the range, \textbf{overflow} either \emph{wraps} (two's
+complement arithmetic, which is catastrophic for audio) or \emph{saturates}
+(clamps to the limit, which costs a comparator). When you discard low bits,
+\textbf{rounding} either truncates (biased; free) or rounds to nearest (one
+adder).
+\end{conceptbox}
+
+\begin{conceptbox}{Quantisation noise and SQNR}
+Rounding to $F$ fractional bits adds an error that is roughly uniform on
+$[-2^{-F-1},2^{-F-1}]$, with variance $\sigma^2=2^{-2F}/12$, provided the signal
+is \enquote{busy} enough~\cite{widrow2008quantization}. For a full-scale sine
+quantised to $N$ bits, this gives the familiar
+\begin{equation}
+  \text{SQNR} \approx 6.02\,N + 1.76\ \text{dB}.
+  \label{eq:primer:sqnr}
+\end{equation}
+Each extra bit buys about \qty{6}{\dB}. The catch is \enquote{full-scale}:
+signals that use only part of the range waste bits. That is why the dynamic
+range profiling in \cref{ch:codesign} comes first.
+\end{conceptbox}
+
+\begin{whybox}[Where this appears in your thesis code]
+The Wiener gain at \file{wiener.py:102} lies between the floor (0.05) and 1
+before tilt and output gain, and up to 4 after. In UQ3.13 its quantisation step
+is $1.2\times10^{-4}$, about \qty{0.001}{\dB} near unity gain but about
+\qty{0.02}{\dB} at the 0.05 floor, because the step is fixed in absolute terms.
+A logarithmic format would keep the relative step constant. Questions like this
+are exactly what Phase~1 measures.
+\end{whybox}
+
+\begin{conceptbox}{Block floating point, small floats and logarithmic numbers}
+\begin{itemize}
+  \item \textbf{Block floating point}: a group of values, such as an FFT frame,
+        shares one exponent. This is cheap and very effective in FFTs.
+  \item \textbf{Small custom floats}, for example a 10-bit mantissa and a 6-bit
+        exponent: the relative precision is constant over a huge range, which is
+        good for power spectra.
+  \item \textbf{Logarithmic number systems}: store $\log_2|x|$. Multiplication
+        becomes addition and division becomes subtraction, while addition
+        becomes harder. Comparisons and minima are exact, since $\log$ is
+        monotone. Your IMCRA minimum trackers are a natural fit.
+\end{itemize}
+\end{conceptbox}
+
+% =========================================================================
+\section{Arithmetic building blocks and their cost}\label{sec:primer:arith}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Relative cost of operations in hardware (qualitative; it depends on
+width and technology).}
+\label{tab:primer:cost}
+\begin{tabularx}{\textwidth}{@{}lLL@{}}
+\toprule
+Operation & Typical implementation & Cost \\
+\midrule
+Add, subtract, compare & ripple or carry-lookahead adder & low: linear in width \\
+Shift by a constant & wiring & free \\
+Multiply & array or Booth multiplier; a DSP slice on an FPGA & moderate: roughly quadratic in width \\
+Divide & iterative (one bit per cycle), or reciprocal + multiply & high, or slow \\
+$\exp$, $\log$, $x^\beta$, $\sqrt{\cdot}$ & table + interpolation, CORDIC, or polynomial & high; depends on accuracy \\
+Table lookup & ROM or RAM & cheap if small; cost grows with size \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{conceptbox}{Reciprocal by Newton--Raphson}
+To compute $y=1/d$, apply Newton's method to $f(y)=1/y-d$:
+\begin{equation}
+  y_{k+1} = y_k\,(2 - d\,y_k).
+\end{equation}
+The relative error squares at every step: if $y_k=(1-e)/d$ then
+$y_{k+1}=(1-e^2)/d$. So a seed from a small table with 8 correct bits becomes 16
+after one step, at the cost of two multiplications. Normalise $d$ first with a
+leading-zero count, so the table only has to cover $[1,2)$, then shift the
+result back~\cite{muller2016elementary}.
+\end{conceptbox}
+
+\begin{conceptbox}{Tables, interpolation and CORDIC}
+A smooth function on a bounded range can be stored as a table of $2^a$ samples.
+Linear interpolation between neighbouring entries costs one multiply and greatly
+improves accuracy for the same table size. $\log_2$ and $2^x$ are especially
+cheap: the integer part comes from the leading-zero count (a priority encoder)
+and only the fractional part needs a table. \emph{CORDIC} computes trigonometric,
+hyperbolic, exponential and logarithmic functions with only shifts and
+additions, one bit of accuracy per iteration~\cite{volder1959cordic}. It is
+compact, but needs many cycles.
+\end{conceptbox}
+
+\begin{whybox}[Where this appears in your thesis code]
+Per bin and per frame, the thesis computes 12 divisions, one \code{exp}
+(\file{imcra.py:153}) and one \code{pow} (\file{wiener.py:102})
+(\cref{ch:workload}). Phase~1 replaces them with shared reciprocals, small
+tables and a gain lookup table rebuilt by the control plane.
+\end{whybox}
+
+% =========================================================================
+\section{The FFT in hardware}\label{sec:primer:fft}
+
+\begin{conceptbox}{The radix-2 butterfly}
+The Cooley--Tukey FFT~\cite{cooley1965fft} splits an $N$-point DFT into two
+$N/2$-point DFTs, recursively, joined by \emph{butterflies}:
+$A' = A + W_N^k B$ and $B' = A - W_N^k B$. An $N$-point transform has $\log_2 N$
+stages of $N/2$ butterflies. Each butterfly is one complex multiplication (four
+real multiplications and two additions) and two complex additions. Hardware
+needs the \emph{twiddle factors} $W_N^k$, which are stored in a ROM; by symmetry
+a quarter wave is enough. It also needs \emph{bit-reversed} ordering at the input
+or output.
+\end{conceptbox}
+
+There are two families of FFT architecture:
+\begin{itemize}
+  \item \textbf{Memory-based (in place).} One or a few butterfly units read and
+        write a RAM over $\log_2 N$ passes. It is small and slow, which is ideal
+        when you have many cycles per frame, as you do.
+  \item \textbf{Pipelined}, such as single-path delay feedback (R2SDF,
+        R2\textsuperscript{2}SDF). There is one butterfly per stage, connected by
+        delay lines, and the unit accepts one sample per cycle
+        continuously~\cite{he1996r22sdf,ch12-13:garrido2022fft}. It is larger,
+        and the choice for streaming at high sample rates.
+\end{itemize}
+Values can grow by one bit per stage. Either provide $\log_2 N$ guard bits,
+scale by $1/2$ at every stage (which loses precision for small signals), or use
+block floating point, scaling only when growth is detected. A \textbf{real-input
+FFT} of size $N$ can be computed with an $N/2$-point complex FFT and a cheap
+post-processing step, which halves the work for audio~\cite{oppenheim2010dtsp}.
+
+% =========================================================================
+\section{Architecture transformations}\label{sec:primer:arch}
+
+\begin{conceptbox}{Throughput, latency and the initiation interval}
+\emph{Latency} is how many cycles one input takes to produce its output.
+\emph{Throughput} is how many inputs are accepted per cycle. A design with
+initiation interval II accepts a new input every II cycles. Pipelining
+(inserting registers) shortens the critical path, allowing a faster clock, and
+keeps II at 1, at the cost of more latency and registers.
+\end{conceptbox}
+
+\begin{conceptbox}{Folding and unfolding}
+\emph{Folding} (resource sharing) maps several operations of the algorithm onto
+one hardware unit over several cycles: less area, more cycles. \emph{Unfolding}
+(parallelism) does the opposite. \emph{Retiming} moves registers to balance
+paths without changing function. These are the main tools of VLSI DSP
+architecture~\cite{parhi1999vlsidsp}.
+\end{conceptbox}
+
+\begin{whybox}[A worked example from your thesis]
+The per-bin processing is about 112 operations for each of 1025 bins
+(\cref{ch:workload}).
+\begin{itemize}
+  \item A \emph{fully pipelined} unit (II = 1, all operations in hardware)
+        processes the bins in about \num{1025} cycles plus its pipeline depth.
+  \item A \emph{fully folded} unit, one arithmetic unit doing about one
+        operation per cycle, needs about \num{115000} cycles.
+\end{itemize}
+At \qty{10}{\MHz} the frame budget is \num{106667} cycles, so the folded design
+just misses it, while the pipelined one uses about 1\%. Between these extremes
+lies a whole family of designs. Finding the one with the least energy per frame
+is part of RQ3.
+\end{whybox}
+
+% =========================================================================
+\section{Memories}\label{sec:primer:memory}
+
+\begin{itemize}
+  \item \textbf{Flip-flops} hold one bit each, can be read in parallel, and are
+        expensive per bit. Use them for pipelines and small state.
+  \item \textbf{SRAM} is dense, with one or two ports, each reading or writing
+        one word per cycle. On an FPGA it appears as block RAM, which on the
+        Zynq-7020 comes in 36\,Kbit blocks, or as distributed \enquote{LUT RAM}.
+  \item \textbf{ROM} holds constant tables. On FPGAs it is block RAM or logic;
+        in ASICs, logic or a ROM macro.
+\end{itemize}
+Accessing memory typically costs considerably more energy than an arithmetic
+operation on the same data, and the gap grows with memory
+size~\cite{ch12-13:horowitz2014energy}. Two rules follow:
+\begin{itemize}
+  \item make memories small, which is why word lengths and bin counts matter;
+  \item touch them rarely, which is why caching the tracker minima matters
+        (\cref{ch:workload}).
+\end{itemize}
+
+% =========================================================================
+\section{Power and energy}\label{sec:primer:power}
+
+\begin{conceptbox}{Dynamic and static power}
+CMOS logic consumes dynamic power each time a node switches:
+\begin{equation}
+  P_\text{dyn} = \alpha\,C\,V_{DD}^2\,f,
+\end{equation}
+with activity factor $\alpha$, switched capacitance $C$, supply voltage
+$V_{DD}$ and clock frequency $f$. \emph{Leakage} (static) power flows whenever
+the circuit is powered, and is ever more important in small processes.
+\end{conceptbox}
+
+Since the work per frame is fixed, the right metric is \textbf{energy per
+frame}, not power. Running faster does not save dynamic energy, since the same
+nodes switch either way. But a design that can run \emph{slower} can run at a
+\emph{lower voltage}, and energy scales with $V^2$. That is why low-power DSP
+uses parallel or pipelined hardware at a low clock and a low
+voltage~\cite{chandrakasan1992lowpower}. Clock gating stops switching in idle
+blocks, and power gating removes leakage from them. Your datapath is idle for
+most of each frame, so both matter.
+
+% =========================================================================
+\section{Implementation targets}\label{sec:primer:targets}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Where a signal-processing algorithm can run.}
+\label{tab:primer:targets}
+\begin{tabularx}{\textwidth}{@{}lLLL@{}}
+\toprule
+Target & Strength & Weakness & In this project \\
+\midrule
+DSP processor or MCU & Flexible software; fast to develop & Energy per operation well above dedicated hardware & The comparison point; the control plane on the ARM \\
+MCU + small NPU & Neural networks at low power & Fixed set of supported operators & Context for Track A \\
+FPGA & Reconfigurable; real-time prototyping & Larger power and area than an ASIC & Phase~4 prototype \\
+ASIC & Lowest energy and area & Expensive, slow, unforgiving & Track B, with an open PDK \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{Design entry: RTL, HLS or a generator}\label{sec:primer:entry}
+
+\begin{itemize}
+  \item \textbf{RTL in SystemVerilog}~\cite{sutherland2006svdesign}: you
+        describe registers and logic explicitly. This is the industry standard
+        and what VLSI and ASIC roles expect you to read and write.
+  \item \textbf{High-level synthesis (HLS)}: C++ compiled to hardware. It is
+        fast for dataflow and ML kernels (hls4ml~\cite{duarte2018hls4ml} builds
+        on it), but harder to control at the bit and cycle level.
+  \item \textbf{Hardware generators} such as Chisel, Amaranth or SpinalHDL:
+        hardware described in Scala or Python. They are powerful, but less
+        common in DSP-ASIC teams.
+\end{itemize}
+
+\textbf{Recommendation:} hand-written SystemVerilog for the DSP datapath, so
+you learn the craft that roles ask for. HLS is optional for Track A.
+
+% =========================================================================
+\section{Interfaces}\label{sec:primer:interfaces}
+
+\begin{itemize}
+  \item \textbf{Valid/ready handshake.} A transfer happens on a cycle when both
+        \sig{valid} (the producer has data) and \sig{ready} (the consumer can
+        take it) are high. It is the universal streaming interface inside
+        designs.
+  \item \textbf{AXI4-Stream}: valid/ready plus data and optional side-band
+        signals, used with DMA engines on Zynq.
+  \item \textbf{AXI4-Lite}: a simple memory-mapped register interface, with
+        separate address and data channels for writes and reads. It is how the
+        ARM writes your registers (\cref{app:registers}).
+  \item \textbf{I2S}: a serial audio interface with a bit clock, a word-select
+        (left/right) clock and a data line, used between the codec and the FPGA.
+\end{itemize}
+
+% =========================================================================
+\section{Verification basics}\label{sec:primer:verif}
+
+A \emph{testbench} drives a design and checks its outputs against a
+\emph{reference model}. When the model is bit-accurate, the check is exact
+equality. \emph{Code coverage} measures which lines and toggles were exercised.
+\emph{Functional coverage} measures which situations you intended to test
+actually occurred. \emph{Assertions} state invariants that simulation checks
+continuously. \emph{Formal verification} proves them for all possible inputs,
+which is practical for small blocks. \Cref{ch:verification} puts all of this
+into practice with cocotb~\cite{cocotb}, Verilator~\cite{verilator} and
+SymbiYosys.
+
+% =========================================================================
+\section{ML inference hardware basics}\label{sec:primer:ml}
+
+\begin{itemize}
+  \item \textbf{MAC arrays.} Neural-network inference is dominated by
+        multiply--accumulate operations. Accelerators are arrays of MAC units
+        fed from local memories.
+  \item \textbf{Systolic arrays.} A grid of MAC cells passes data to its
+        neighbours every cycle, so each value fetched from memory is reused many
+        times~\cite{kung1982systolic}. A TPU is built around
+        one~\cite{jouppi2017tpu}.
+  \item \textbf{Dataflows.} \emph{Weight-stationary} keeps weights in the cells;
+        \emph{output-stationary} keeps partial sums; \emph{row-stationary}
+        balances both~\cite{chen2017eyeriss}. The choice decides which memory
+        traffic you save.
+  \item \textbf{Quantisation.} Int8 weights and activations with int32
+        accumulation are standard, with a small loss in accuracy for most
+        models~\cite{jacob2018quantization}.
+  \item \textbf{Roofline.} Achievable performance is the minimum of peak
+        compute and memory bandwidth times arithmetic intensity, the operations
+        per byte moved~\cite{williams2009roofline}. Batch-1 matrix--vector
+        products have low intensity, so they are memory-bound.
+\end{itemize}
+
+\begin{readbox}[Read --- the essential four]
+Harris and Harris, for digital design~\cite{harris2021ddca}. Parhi, for VLSI
+DSP architecture~\cite{parhi1999vlsidsp}. Sze \etal, for ML
+hardware~\cite{sze2017efficient}. Widrow and Koll\'ar, for
+quantisation~\cite{widrow2008quantization}. \Cref{app:reading} has the full
+annotated list.
+\end{readbox}
+
+\begin{donebox}[You have what you need from this chapter when you can]
+\begin{checklist}
+  \item read Q3.13 and compute its range and resolution in your head;
+  \item explain why one Newton--Raphson step doubles the correct bits;
+  \item sketch a radix-2 butterfly and say how many there are in a 1024-point FFT;
+  \item explain folding versus pipelining with the bin-processing example;
+  \item explain why energy per frame, not power, is the right metric here.
+\end{checklist}
+\end{donebox}

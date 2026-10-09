@@ -1,3 +1,84 @@
 \chapter{Command Cheat Sheet}\label{app:cheatsheet}
 
-PLACEHOLDER --- this chapter is being written.
+The commands you will type most often, grouped by phase. Tool options change
+between versions; when one fails, check the tool's own documentation for the
+version you installed (and record that version in your notebook).
+
+\section*{Python environment and metrics (Phase 0)}
+\begin{lstlisting}[style=shell]
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ../Intention_based_speech_enhancment_using_NLP   # thesis code
+pip install numpy scipy soundfile pandas matplotlib pytest ruff pesq pystoi pyyaml cocotb
+pip freeze > requirements-lock.txt
+pytest metrics                       # metric unit tests
+ruff check .                         # lint Python
+PYTHONPATH=src python docs/research_guide/scripts/measure_workload.py   # (thesis repo)
+\end{lstlisting}
+
+\section*{Golden model and sweeps (Phase 1)}
+\begin{lstlisting}[style=shell]
+python -m golden.sweep --config experiments/012-wordlength/config.yaml
+python -m golden.vectors --out golden/vectors/      # export golden test vectors
+git tag spec-v1 && git push --tags
+\end{lstlisting}
+
+\section*{RTL: lint, simulate, synthesize (Phases 2--3)}
+\begin{lstlisting}[style=shell]
+verilator --lint-only -Wall rtl/*.sv --top-module ise_top
+make -C tb/recip_unit SIM=verilator          # one cocotb testbench (Makefile flow)
+make -C tb/recip_unit SIM=icarus             # same test, second simulator
+pytest tb/                                   # if you use cocotb's Python runner
+yosys -p "read_verilog -sv rtl/bin_pipeline.sv; synth -top bin_pipeline; stat"
+sv2v rtl/*.sv > build/design.v               # if a tool needs plain Verilog
+sby -f tb/formal/min_tracker.sby             # formal proof (SymbiYosys)
+gtkwave build/dump.fst  # or: surfer build/dump.fst
+\end{lstlisting}
+
+\section*{Coverage (Phase 3)}
+\begin{lstlisting}[style=shell]
+# build the simulation with Verilator's --coverage, run the tests, then:
+verilator_coverage --annotate build/cov_annotated coverage.dat
+\end{lstlisting}
+
+\section*{Vivado in batch mode (Phase 4)}
+\begin{lstlisting}[style=shell]
+vivado -mode batch -source fpga/pynq_z2/build.tcl      # rebuild project + bitstream
+\end{lstlisting}
+\begin{lstlisting}[style=tcl]
+# useful commands inside a Vivado Tcl script or console
+report_timing_summary -file reports/timing.rpt
+report_utilization    -file reports/utilization.rpt
+report_power          -file reports/power.rpt
+write_bd_tcl -force fpga/pynq_z2/bd.tcl                 # save the block design
+\end{lstlisting}
+
+\section*{On the PYNQ board (Phase 4)}
+\begin{lstlisting}[style=py]
+from pynq import Overlay, MMIO, allocate
+ol = Overlay("ise.bit")              # .hwh with the same name next to it
+print(ol.ip_dict.keys())             # find your IP and its address
+regs = MMIO(ol.ip_dict["regs_axil_0"]["phys_addr"], 0x100)
+print(hex(regs.read(0x08)))          # VERSION register: a first sanity check
+\end{lstlisting}
+
+\section*{ASIC flow (Track B)}
+\begin{lstlisting}[style=shell]
+nix-shell librelane/shell.nix        # enter the LibreLane environment
+librelane --smoke-test
+librelane asic/bin_pipeline/config.json            # default PDK
+librelane --pdk ihp-sg13g2 asic/bin_pipeline/config.yaml   # another PDK
+klayout runs/<run>/final/gds/bin_pipeline.gds     # look at your layout
+\end{lstlisting}
+
+\section*{Git habits}
+\begin{lstlisting}[style=shell]
+git switch -c exp/023-log-trackers          # one branch per experiment
+git commit -m "Log-domain trackers: 8-bit minima meet RQ1 on dev set"
+git tag m2-bit-exact && git push --tags    # one tag per milestone
+\end{lstlisting}
+
+\section*{This guide}
+\begin{lstlisting}[style=shell]
+cd docs/research_guide && make              # build research_guide.pdf
+tools/check_chapter.sh chapters/05-codesign # check one chapter quickly
+\end{lstlisting}

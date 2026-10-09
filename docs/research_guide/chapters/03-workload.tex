@@ -55,7 +55,7 @@ parameters.
           fit=(mic)(spk),label={[anchor=south west,font=\sffamily\bfseries\footnotesize,text=brand]north west:Data plane --- every frame, hard deadline \qty{10.667}{\ms}}] {};
   \end{scope}
   % control plane
-  \node[blk=rqc,below=17mm of stft] (txt) {Complaint\\(text)};
+  \node[blk=rqc,below=17mm of mic] (txt) {Complaint\\(text)};
   \node[blk=rqc,right=of txt] (emb) {Sentence\\encoder};
   \node[blk=rqc,right=of emb] (cls) {Intent class\\+ severity};
   \node[blk=rqc,right=of cls] (map) {Parameter\\mapping};
@@ -64,8 +64,8 @@ parameters.
     \node[draw=rqc,fill=rqc!4,rounded corners=2mm,inner sep=3mm,
           fit=(txt)(map),label={[anchor=north west,font=\sffamily\bfseries\footnotesize,text=rqc]south west:Control plane --- only when the user speaks}] {};
   \end{scope}
-  \draw[ctl] (map.north) -- node[right,align=left,text=pitc,font=\sffamily\scriptsize]{$\beta$, floor\\$\Rightarrow$ gain LUT} (wien.south);
-  \draw[ctl] (map.east) -| node[pos=0.75,right,align=left,text=pitc,font=\sffamily\scriptsize]{output gain,\\tilt $\Rightarrow$ 2 registers} (istft.south);
+  \draw[ctl] (map.north) -- node[left,align=right,text=pitc,font=\sffamily\scriptsize]{$\beta$, floor\\$\Rightarrow$ gain LUT} (map.north |- wien.south);
+  \draw[ctl] (map.east) -| node[pos=0.75,right,align=left,text=pitc,font=\sffamily\scriptsize]{output gain, tilt\\$\Rightarrow$ 2 registers} (istft.south);
 \end{tikzpicture}
 \caption{The thesis system redrawn as a data plane and a control plane. The
 dashed red arrows are the \emph{entire} interface between them. In hardware it

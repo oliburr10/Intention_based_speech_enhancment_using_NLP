@@ -58,8 +58,9 @@ the shadow bank already contains the current one.
 \begin{enumerate}
   \item The control plane classifies the complaint and computes the new
         parameters: $\beta$, floor, $g_\text{out}$ and tilt.
-  \item It computes the 256-entry table with \code{make\_gain\_lut(beta,
-        floor)} (\cref{ch:codesign}) and $r=10^{\text{tilt}/(20(K-1))}$.
+  \item It computes the 256-entry gain table with the same function the golden
+        model uses (\code{make\_gain\_lut}, \cref{ch:codesign}), and the tilt
+        ratio $r=10^{\text{tilt}/(20(K-1))}$.
   \item It waits until \code{STATUS.COMMIT\_PENDING} is 0.
   \item It writes \reg{LUT\_ADDR} = \code{0x80000000} (address 0,
         auto-increment), then 256 writes to \reg{LUT\_WDATA}.

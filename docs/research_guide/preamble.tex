@@ -144,6 +144,10 @@
 \usepackage{csquotes}
 \usepackage[backend=biber,style=ieee,sorting=none,maxnames=4,minnames=3,
             doi=true,url=true,isbn=false]{biblatex}
+% Let long URLs in the bibliography break anywhere.
+\setcounter{biburlnumpenalty}{100}
+\setcounter{biburlucpenalty}{100}
+\setcounter{biburllcpenalty}{100}
 
 % ---- Hyperlinks (load late) ---------------------------------------------
 \usepackage[hidelinks=false,colorlinks=true,linkcolor=brand,citecolor=brand,
