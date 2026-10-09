@@ -1,3 +1,317 @@
 \chapter{Phase 3 --- Verification}\label{ch:verification}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{7--12, alongside Phase 2} \quad Milestone M2
+
+In industry, verification typically takes more effort than design. That is not
+inefficiency. A bug found in simulation costs minutes. Found on the FPGA, it
+costs days. Found in silicon, it can cost a re-spin. This project has an
+unusual advantage that makes verification both rigorous and pleasant: a
+\emph{bit-accurate golden model} written in Python. The question is never
+\enquote{does this look right?} but \enquote{are the integers identical?}
+
+\begin{whybox}
+Bit-exactness against the golden model is what makes your hardware results
+meaningful. Once the RTL is bit-exact, every quality number from Phase~1 (RQ1,
+RQ2) is also a statement about the hardware. And verification skills (cocotb,
+coverage, assertions, formal) are among the most employable things this project
+teaches.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+Golden model and vectors (\code{spec-v1}); RTL blocks as they are written
+(\cref{ch:rtl}); Verilator, Icarus and cocotb from Phase~0
+& A verification plan; one testbench per block plus a top-level test; a
+regression in CI; a coverage summary; formal proofs for small blocks \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =========================================================================
+\section{The verification plan}\label{sec:verif:plan}
+
+Write the plan before the tests, in \file{docs/verification_plan.md}. It lists
+every feature that must work, how it will be tested, and what counts as passing
+(\cref{tab:verif:plan}). Review it at every milestone. A feature with no test is
+a feature you are hoping works.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{An excerpt of a verification plan. Extend it to every block and feature.}
+\label{tab:verif:plan}
+\begin{tabularx}{\textwidth}{@{}lLLL@{}}
+\toprule
+ID & Feature & Test & Pass criterion \\
+\midrule
+V1 & \code{qmul\_sat} rounding and saturation & Exhaustive (narrow widths) or $10^6$ random vectors & 0 mismatches against \code{fixedpoint.mul} \\
+V2 & \code{recip\_unit} & Full input range or dense random & 0 mismatches against the golden reciprocal \\
+V3 & \code{min\_tracker} across sub-window ends & 200 frames of golden vectors & $S_\text{min}$ bit-exact every frame \\
+V4 & 5-tap smoothing at spectrum edges & Impulse at bins 0, 1, $K-2$, $K-1$ & Bit-exact with \code{np.convolve(mode="same")} semantics \\
+V5 & \code{fft\_r2\_mem} with block floating point & Impulse, tones, full-scale noise & Bit-exact data and exponent \\
+V6 & Parameter commit at a frame boundary & Commit in the middle of a frame & Old parameters until the boundary, new after; no mixed frame \\
+V7 & Pre-roll & First \reg{PREROLL\_FRAMES} frames & Pass-through, then seeded state equals golden \\
+V8 & End to end & Synthetic set + VoiceBank utterances & Bit-exact output; identical PESQ/STOI \\
+V9 & Deadline & Worst-case frame & \reg{CYCLES\_LAST} below budget; no \code{FRAME\_OVERRUN} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================================================================
+\section{How the testbenches are built}\label{sec:verif:arch}
+
+Every testbench has the same four parts, which mirror industrial methodologies
+such as UVM in a lightweight Python form:
+\begin{itemize}
+  \item a \textbf{driver}, which turns test data into pin activity (valid/ready
+        handshakes, samples, bus writes);
+  \item a \textbf{monitor}, which watches outputs and turns them back into data;
+  \item a \textbf{reference model}, which is your golden model, imported
+        directly;
+  \item a \textbf{scoreboard}, which compares expected and actual results and
+        reports the \emph{first} mismatch with enough context to debug it.
+\end{itemize}
+Because cocotb testbenches are Python~\cite{cocotb}, the reference model is
+not a re-implementation. It is the same code that produced your Phase~1 results.
+
+% =========================================================================
+\section{Steps}\label{sec:verif:steps}
+
+\begin{stepbox}[label=st:verif:first]{Your first real testbench: \texttt{recip\_unit}}
+The listing below is a complete pattern you will reuse for every pipelined
+block. Note the separate driver and monitor coroutines. The monitor samples in
+the \code{ReadOnly} phase after the clock edge, when all signals have settled.
+
+\begin{lstlisting}[style=py]
+import numpy as np
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import ClockCycles, ReadOnly, RisingEdge, with_timeout
+from golden.recip import recip_model          # the same code golden/ uses
+
+async def drive(dut, values):
+    for v in values:
+        await RisingEdge(dut.clk)
+        dut.in_data.value = int(v)
+        dut.in_valid.value = 1
+    await RisingEdge(dut.clk)
+    dut.in_valid.value = 0
+
+async def monitor(dut, out, n):
+    while len(out) < n:
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+        if dut.out_valid.value == 1:
+            out.append(int(dut.out_data.value))
+
+@cocotb.test()
+async def recip_matches_golden(dut):
+    cocotb.start_soon(Clock(dut.clk, 10, "ns").start())
+    dut.rst.value, dut.in_valid.value = 1, 0
+    await ClockCycles(dut.clk, 3)
+    dut.rst.value = 0
+    rng = np.random.default_rng(1234)
+    stim = [1, 2, 3, 2**15, 2**16 - 1] + list(rng.integers(1, 2**16, 5000))
+    got = []
+    mon = cocotb.start_soon(monitor(dut, got, len(stim)))
+    await drive(dut, stim)
+    await with_timeout(mon, 100, "us")
+    bad = [(v, recip_model(v), g) for v, g in zip(stim, got) if recip_model(v) != g]
+    assert not bad, f"{len(bad)} mismatches; first (in, expected, got): {bad[:5]}"
+\end{lstlisting}
+
+\textbf{Check:} the test passes on Verilator and on Icarus. Then deliberately
+break the RTL (flip a rounding constant) and confirm the test fails with a
+useful message. A test that cannot fail is not a test. \textbf{Effort:} 1 day
+(with the RTL).
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:vectors]{Golden-vector plumbing}
+Write \file{tb/common/vectors.py} to load the files exported by
+\file{golden/vectors.py}: per test signal, per probe point, per frame, as
+integer arrays. Add a scoreboard helper that compares an RTL probe stream with
+its golden array. On the first mismatch it reports the frame, the bin, the
+expected and actual values, and the five previous values.
+
+\textbf{Check:} the helper reports a deliberately injected mismatch at the right
+frame and bin. \textbf{Effort:} half a day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:binpipe]{A streaming testbench for \texttt{bin\_pipeline}}
+Drive one bin per cycle from the golden spectra and compare the outputs, and
+the internal probes exposed through debug ports, frame by frame. Add random
+\emph{back-pressure}: hold \sig{out_ready} low on random cycles. That checks the
+pipeline stalls without losing or duplicating a bin, if your design has
+back-pressure at all. If it is purely schedule-driven, test the schedule
+instead.
+
+\textbf{Check:} bit-exact on all synthetic signals and at least one utterance,
+including a parameter commit. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:top]{Frame-level test of \texttt{ise\_top} with real audio}
+Feed a full VoiceBank utterance through \code{ise\_top} and collect the output
+samples. Compare them bit for bit with the golden model. Then compute PESQ, STOI
+and SI-SDR on the RTL output. They must equal the golden model's numbers
+exactly, and that equality is the evidence connecting Phase~1 to the hardware.
+
+\textbf{Check:} bit-exact output; identical metrics. Note the simulation time
+per second of audio for your report. \textbf{Effort:} 2 days.
+\end{stepbox}
+
+\begin{tipbox}[Keep Python out of the per-cycle loop]
+A full utterance is millions of clock cycles. A cocotb coroutine that wakes on
+every clock edge makes the simulation slow. Wake on \emph{events} instead: a
+sample strobe, a \sig{frame_done} pulse, or a FIFO becoming non-empty. Let the
+simulator run the cycles in between at full speed.
+\end{tipbox}
+
+\begin{stepbox}[label=st:verif:corners]{Directed corner cases}
+Real speech rarely exercises extremes. Write one directed test per item:
+\begin{itemize}
+  \item silence: all zeros, which tests division by tiny noise estimates and
+        the $\varepsilon$ floors;
+  \item a full-scale sine, which tests saturation in the FFT and the power
+        computation;
+  \item a clipped square wave and DC, which test bin 0 and the block exponent;
+  \item an impulse and a chirp;
+  \item a parameter commit in mid-frame (V6), two commits in quick succession,
+        and a commit during pre-roll;
+  \item a soft reset in the middle of the stream, then re-seeding;
+  \item a bus read and write during frame processing.
+\end{itemize}
+
+\textbf{Check:} every item is in the verification plan with a passing test.
+\textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:random]{Constrained-random tests}
+Generate random but \emph{legal} stimuli: noise at random levels and spectral
+shapes, random parameter sequences within the register ranges, and commits at
+random times. Seed every run and print the seed, so any failure can be
+reproduced exactly.
+
+\textbf{Check:} 100 random seeds pass. Any failure becomes a new directed test
+before it is fixed. \textbf{Effort:} 1--2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:coverage]{Measure coverage}
+\begin{itemize}
+  \item \textbf{Code coverage.} Build with Verilator's \code{--coverage} option
+  and summarise with \code{verilator\_coverage}~\cite{ch12-13:verilatorguide}.
+  Look for lines and toggles never exercised.
+  \item \textbf{Functional coverage.} Count events that matter: every gain-table
+  index used; saturation in each block; each number of block-floating-point
+  shifts; commits at and away from frame boundaries; tracker sub-window ends.
+  Use simple counters in Python, or the \code{cocotb-coverage} package.
+\end{itemize}
+
+\textbf{Check:} every un-hit item is either covered by a new test or explained
+in the plan (for example, as unreachable by design). \textbf{Effort:} 1--2 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:formal]{Assertions and formal proofs for small blocks}
+Add immediate assertions inside the RTL for invariants. Verilator checks them
+in simulation when built with assertions enabled:
+
+\begin{lstlisting}[style=sv]
+`ifdef FORMAL_OR_SIM_CHECKS
+  always_comb begin
+    assert (s_min <= running_d);
+    for (int i = 0; i < U; i++) assert (s_min <= store_d[i]);
+  end
+`endif
+\end{lstlisting}
+
+For small blocks such as \code{min\_tracker}, the AXI-Lite register file and any
+FIFO, go further: \emph{prove} the properties for all inputs with SymbiYosys,
+the formal front end in the OSS CAD Suite~\cite{ch12-13:sbydocs}:
+
+\begin{lstlisting}[style=plain,caption={\texttt{tb/formal/min\_tracker.sby} (adapt to the current SymbiYosys documentation).}]
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read -formal -D FORMAL_OR_SIM_CHECKS min_tracker.sv
+prep -top min_tracker
+
+[files]
+../../rtl/min_tracker.sv
+\end{lstlisting}
+
+\textbf{Check:} the proof passes. A broken variant, such as one using the wrong
+comparison, produces a counterexample trace. \textbf{Effort:} 2 days, and it is
+worth it: formal skills stand out on a CV.
+\end{stepbox}
+
+\begin{stepbox}[label=st:verif:ci]{Regression in CI}
+Add a CI job that installs Verilator (the OSS CAD Suite is convenient for this),
+runs every cocotb test and the formal proofs, and archives the coverage summary.
+Keep the full-utterance tests in a nightly or manual job if they are slow.
+
+\textbf{Check:} every push runs the fast regression. The badge is green at M2.
+\textbf{Effort:} half a day.
+\end{stepbox}
+
+% =========================================================================
+\section{When the RTL and the model disagree}\label{sec:verif:debug}
+
+Mismatches are where you learn the most. Debug them systematically:
+\begin{enumerate}
+  \item \textbf{Find the first divergence.} Compare the internal probes block
+        by block, in pipeline order. The first probe that differs, in the
+        earliest frame and lowest bin, is where the bug is, or just upstream
+        of it.
+  \item \textbf{Shrink the case.} Reproduce it with the shortest input that
+        fails, often a single frame of a synthetic signal.
+  \item \textbf{Look at waves.} Dump an FST trace for just that window, with
+        Verilator's tracing options, and inspect it in GTKWave or Surfer next to
+        the golden values.
+  \item \textbf{Decide who is wrong.} Sometimes it is the model. A float slipped
+        into a fixed-point path, or the model rounds differently from the
+        specification. Fix the specification first, then whichever side
+        disagrees with it.
+  \item \textbf{Add a regression test} for the bug before fixing it.
+\end{enumerate}
+
+\begin{pitfallbox}[Pitfalls in Phase 3]
+\begin{itemize}
+  \item \textbf{Comparing with tolerances.} \enquote{Within 1 LSB} hides
+        systematic rounding bugs that add up over frames. Require exact
+        equality.
+  \item \textbf{Testing only with speech.} Speech never saturates the FFT or
+        produces exact half-LSB ties. Synthetic and random signals do.
+  \item \textbf{Reading outputs at the wrong time.} Sample after the edge, in
+        \code{ReadOnly}. Drive on the edge, never in \code{ReadOnly}.
+  \item \textbf{Unseeded randomness.} An irreproducible failure is almost
+        worthless.
+  \item \textbf{Verification as an afterthought.} Each block's test is written
+        together with the block. A week of untested RTL is a week of hidden
+        bugs.
+\end{itemize}
+\end{pitfallbox}
+
+\begin{readbox}
+cocotb documentation and examples~\cite{ch12-13:cocotbdocs}. Verilator user's
+guide, for lint, tracing and coverage~\cite{ch12-13:verilatorguide}.
+SymbiYosys~\cite{ch12-13:sbydocs}. For verification methodology in
+SystemVerilog, useful even though you test in Python:
+Spear and Tumbush~\cite{ch12-13:spear2012svverif}. Formal verification of real
+designs, step by step: the ZipCPU blog~\cite{ch12-13:zipcpu}.
+\end{readbox}
+
+\begin{donebox}[Milestone M2 is reached (with Phase 2) when]
+\begin{checklist}
+  \item The verification plan covers every block and feature, and every entry has a passing test.
+  \item \code{ise\_top} is bit-exact with the golden model on all golden vectors and full utterances, with identical metrics.
+  \item Directed corner cases and 100 constrained-random seeds pass.
+  \item Coverage is measured and every gap is closed or explained.
+  \item Formal proofs pass for at least \code{min\_tracker} and the register file.
+  \item The regression runs in CI and is green.
+\end{checklist}
+\end{donebox}

@@ -1,3 +1,282 @@
 \chapter{Phase 4 --- Real-Time FPGA Prototype on the PYNQ-Z2}\label{ch:fpga}
 
-PLACEHOLDER --- this chapter is being written.
+\weeks{12--16} \quad Milestone M3
+
+Simulation proves the design is correct; the FPGA proves it is \emph{real}. In
+this phase your RTL processes live audio in real time, and typed complaints
+change what you hear by writing hardware registers. That is your thesis
+architecture on a single chip, with real numbers for latency, resources and
+power.
+
+\begin{whybox}
+Phase~4 turns RQ2 and RQ3 from estimates into measurements: end-to-end latency
+through real converters, resource use on a real device, and measured cycles per
+frame (H4). It is also the demo: a 60-second video of the system working is the
+single most persuasive artefact in your portfolio.
+\end{whybox}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}LL@{}}
+\toprule
+\textbf{Inputs} & \textbf{Outputs} \\
+\midrule
+M2: bit-exact, verified RTL; register map (\cref{app:registers}); a Vivado
+host (\cref{ch:setup}); the hardware listed below
+& Scripted Vivado project in \file{fpga/pynq_z2/}; bitstream and overlay; a
+Python driver; a hardware-in-the-loop bit-exact test; latency, resource and
+power measurements; demo video \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =========================================================================
+\section{Hardware and host}\label{sec:fpga:hw}
+
+\begin{itemize}
+  \item \textbf{TUL PYNQ-Z2 board.} A Zynq XC7Z020 SoC (a dual-core ARM
+  Cortex-A9 processing system plus FPGA fabric), 512\,MB DDR3, and an Analog
+  Devices ADAU1761 audio codec with headphone and line/microphone jacks. It is
+  supported by the PYNQ framework~\cite{pynq,ch12-13:pynqdocs}, which runs
+  Linux and Jupyter on the ARM and loads FPGA designs (\enquote{overlays}) from
+  Python.
+  \item A microSD card (16\,GB or more), a USB cable, an Ethernet cable,
+        headphones, and a line-level audio source.
+  \item Optional: your thesis's RME Fireface for loopback latency measurements,
+        and a USB power meter.
+  \item \textbf{Host:} Vivado on an x86-64 Linux or Windows machine
+        (\cref{ch:setup}). Use the Vivado version that your PYNQ image release
+        names in its documentation, so the board files and drivers match.
+\end{itemize}
+
+\begin{conceptbox}{Processing system and programmable logic}
+A Zynq has two halves. The \emph{processing system} (PS) is a dual-core ARM
+running Linux, with the DDR memory. The \emph{programmable logic} (PL) is FPGA
+fabric where your RTL lives. They communicate over AXI buses:
+\begin{itemize}
+  \item AXI4-Lite for registers, so your \code{regs\_axil} appears as a block of
+        memory addresses to Python;
+  \item AXI4-Stream plus a DMA engine for bulk data.
+\end{itemize}
+This split matches your architecture: control plane on the PS, data plane in
+the PL~\cite{ch12-13:crockett2014zynq}.
+\end{conceptbox}
+
+% =========================================================================
+\section{Steps}\label{sec:fpga:steps}
+
+\begin{stepbox}[label=st:fpga:boot]{Bring up the board and prove the audio path}
+Flash the PYNQ image for the PYNQ-Z2 to the microSD card, boot, and open
+Jupyter from your browser. Run the base overlay's audio example: record a few
+seconds and play them back through the headphones.
+
+This proves the codec, cables and jacks before any of your own hardware is
+involved. Read how the base overlay's Python audio driver configures the
+ADAU1761. You will reuse that configuration sequence.
+
+\textbf{Check:} you hear your own recording. Note the PYNQ image version and
+the Vivado version it requires in your notebook. \textbf{Effort:} half a day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:dma]{Hardware-in-the-loop first: \texttt{ise\_top} behind an AXI DMA}
+Before touching real-time audio, get your design on the chip in the simplest
+possible system:
+\begin{itemize}
+  \item the Zynq PS;
+  \item an AXI DMA engine that streams samples from DDR into \code{ise\_top} and
+        streams results back;
+  \item \code{regs\_axil} on AXI4-Lite.
+\end{itemize}
+Wrap \code{ise\_top} in a thin adapter with AXI4-Stream input and output, and
+package it as IP.
+
+Create the whole Vivado project from a Tcl script in
+\file{fpga/pynq_z2/build.tcl}, never by clicking only, so it is version
+controlled and reproducible. A good habit is to build the block design once in
+the GUI, then export it with \code{write\_bd\_tcl} and commit the script.
+
+\begin{lstlisting}[style=py,caption={Hardware-in-the-loop test from a PYNQ notebook (API names as in current PYNQ; check your version).}]
+import numpy as np
+from pynq import Overlay, allocate
+
+ol = Overlay("ise_hil.bit")                     # loads bitstream + .hwh
+dma = ol.axi_dma_0
+x = np.load("golden/vectors/utt01_input.npy").astype(np.int16)
+y_ref = np.load("golden/vectors/utt01_output.npy").astype(np.int16)
+
+src = allocate(shape=x.shape, dtype=np.int16); src[:] = x
+dst = allocate(shape=y_ref.shape, dtype=np.int16)
+dma.recvchannel.transfer(dst); dma.sendchannel.transfer(src)
+dma.sendchannel.wait(); dma.recvchannel.wait()
+print("bit-exact:", np.array_equal(np.asarray(dst), y_ref))
+\end{lstlisting}
+
+\textbf{Check:} the FPGA output is bit-exact with the golden model, the same
+result as in simulation, now on silicon. \textbf{Effort:} 3--5 days. The first
+Vivado project always takes longer than expected.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:timing]{Timing closure and utilisation}
+Run implementation at your chosen PL clock (\qty{100}{\MHz} from the PS is a
+convenient start), then read two reports:
+\begin{itemize}
+  \item \code{report\_timing\_summary}: worst negative slack (WNS) must be
+        $\ge 0$;
+  \item \code{report\_utilization}: LUTs, flip-flops, DSP slices and block RAM
+        tiles, both per block and in total.
+\end{itemize}
+Compare block RAM use with your state-memory calculation from \cref{ch:workload}.
+
+\textbf{Check:} timing is met with margin. Utilisation is recorded in
+\file{docs/resources.md}. If timing fails, add one pipeline register on the
+failing path. Your design only needs a few MHz of real throughput, so it does
+not need to run at the top clock speed. \textbf{Effort:} 1 day.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:audio]{Real-time audio: I2S to the codec}
+Now replace the DMA path with the codec. You need three things:
+\begin{enumerate}
+  \item \textbf{Codec configuration.} Send the ADAU1761 register sequence over
+  I2C from the PS. Reuse what the base overlay's driver does, together with the
+  codec datasheet, to set the sample rate (\qty{48}{\kHz}, or the rate chosen in
+  Phase~1), the I2S format and the signal routing.
+  \item \textbf{I2S receiver and transmitter} in the PL (\file{rtl/i2s_rx.sv},
+  \file{rtl/i2s_tx.sv}). They deserialise and serialise samples using the bit
+  clock and word-select (LRCLK) signals.
+  \item \textbf{Clock-domain crossing.} The I2S clocks are not your system clock.
+  Bring samples across through a small asynchronous FIFO, or capture each
+  sample in the I2S domain and pass a synchronised strobe (a two-flip-flop
+  synchroniser) with the data held stable. Never sample a multi-bit bus
+  directly across clock domains.
+\end{enumerate}
+
+\textbf{Check:} with \code{CTRL.BYPASS} set, audio passes through unaltered,
+apart from delay. With \code{BYPASS} clear and default parameters, you hear
+noise reduction. With $\beta$ raised through the registers, you hear stronger
+suppression, as in the thesis. \textbf{Effort:} 1--1.5 weeks.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:control]{Close the loop: complaints control the hardware}
+Write a small Python service on the PYNQ that receives parameter updates and
+applies them with the driver in \cref{app:registers}. Then choose where the NLP
+runs:
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Option A (recommended first): NLP on your laptop]
+  Run the thesis pipeline unchanged: mpnet, SVM and Ridge, and the parameter
+  mapping. Send the resulting parameters to the board over the network. This
+  mirrors a real product architecture, where language processing runs on a
+  paired phone and the hearing aid receives only parameters.
+  \item[Option B (stretch): NLP on the board]
+  Run a small encoder on the Cortex-A9. Be realistic: 512\,MB of RAM rules out
+  fp32 mpnet, and many ML runtimes ship only 64-bit ARM builds while the
+  Zynq-7000 is 32-bit. Check the availability of your runtime before you
+  commit to this. If it works, measure the latency per sentence. This feeds
+  directly into Track~A (\cref{ch:mlaccel}).
+\end{description}
+
+\textbf{Check:} typing \enquote{the background noise is unbearable} audibly
+increases suppression within a fraction of a second, with no clicks at the
+switch. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:measure]{Measure latency, cycles and power}
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Latency]
+  Use the thesis's RME Fireface. Play a chirp or click into the board's line
+  input while recording both the source and the board's output on two Fireface
+  inputs. The lag of the cross-correlation peak is the end-to-end latency. Then
+  measure again in \code{BYPASS} mode. The difference is your algorithm and
+  datapath; the bypass value is the converters and I2S buffering. Compare with
+  the algorithmic latency predicted for your frame configuration.
+  \item[Cycles]
+  Read \reg{CYCLES\_LAST} over many frames. Its maximum, against the frame
+  budget, is your measured answer to H4.
+  \item[Power]
+  Report Vivado's \code{report\_power} estimate for the PL (static and dynamic),
+  ideally using switching activity from a simulation of real audio rather than
+  the default activity rates. Then measure board power with a USB meter, with
+  \code{CTRL.ENABLE} on and off. Expect the board total to be dominated by the
+  ARM, the DDR memory and the regulators. That is exactly why the Vivado PL
+  estimate and energy per frame, $E_\text{frame}=P_\text{dyn}\,T_\text{frame}$,
+  are the meaningful numbers.
+\end{description}
+
+\begin{center}\footnotesize
+\begin{tabularx}{\textwidth}{@{}LCCC@{}}
+\toprule
+Measurement & Value & Method & Notes \\
+\midrule
+End-to-end latency (processing) & & loopback cross-correlation & \\
+End-to-end latency (bypass) & & loopback cross-correlation & \\
+Max cycles per frame / budget & & \reg{CYCLES\_LAST} & H4 \\
+LUT / FF / DSP / BRAM & & \code{report\_utilization} & \\
+PL dynamic / static power & & \code{report\_power} & activity source? \\
+Board power, enabled / disabled & & USB meter & \\
+Energy per frame & & $P_\text{dyn}T_\text{frame}$ & \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Check:} the table is filled in, every value has its method and
+conditions in the notebook, and the latency matches your prediction within a
+few milliseconds of converter delay. \textbf{Effort:} 2--3 days.
+\end{stepbox}
+
+\begin{stepbox}[label=st:fpga:demo]{Record the demo}
+Script a 60--90 second video:
+\begin{enumerate}
+  \item noisy speech playing;
+  \item type a complaint; the parameters change;
+  \item the audio audibly improves;
+  \item type \enquote{that's perfect now} (\code{BALANCED}) and the parameters
+        decay back towards their defaults;
+  \item finish on the resource and latency numbers on screen.
+\end{enumerate}
+Record with good audio: use the Fireface, not a phone microphone next to
+headphones.
+
+\textbf{Check:} someone who has never seen the project understands it from the
+video alone. \textbf{Effort:} 1 day.
+\end{stepbox}
+
+% =========================================================================
+\section{Pitfalls}\label{sec:fpga:pitfalls}
+
+\begin{pitfallbox}[Pitfalls in Phase 4]
+\begin{itemize}
+  \item \textbf{Vivado and PYNQ versions that do not match.} Board files and
+        overlay metadata differ between releases. Use the documented pairing.
+  \item \textbf{Starting with real-time audio.} Get the bit-exact DMA test
+        working first. Then any problem in real time is in the I2S, clocking or
+        codec setup, not in your datapath.
+  \item \textbf{Clock-domain crossing by accident.} Every signal crossing
+        between the I2S and system clocks needs a deliberate synchroniser or
+        FIFO. Such bugs appear intermittently and are miserable to find.
+  \item \textbf{Codec configuration.} A wrong I2S word length or a missed
+        routing register gives silence or noise. Compare your register
+        sequence with the working base overlay.
+  \item \textbf{Address map surprises.} Check the address Vivado assigned to
+        \code{regs\_axil} and read \reg{VERSION} first as a sanity check.
+  \item \textbf{Comparing board power to a hearing aid.} The PYNQ board is not
+        a low-power platform. Report PL estimates and energy per frame, and
+        explain the difference (\cref{ch:evaluation}).
+\end{itemize}
+\end{pitfallbox}
+
+\begin{readbox}
+PYNQ documentation~\cite{ch12-13:pynqdocs} and its support
+forum~\cite{ch12-13:pynqforum}. \emph{The Zynq Book}, for the PS/PL
+architecture and AXI~\cite{ch12-13:crockett2014zynq}. FPGA DSP arithmetic and
+resource mapping: Meyer-Baese~\cite{meyerbaese2014fpgadsp}.
+\end{readbox}
+
+\begin{donebox}[Milestone M3 is reached when]
+\begin{checklist}
+  \item The Vivado project is rebuilt from a committed Tcl script.
+  \item The hardware-in-the-loop test is bit-exact on the FPGA.
+  \item Timing is met; utilisation is recorded.
+  \item Live audio is enhanced in real time; bypass works; parameter changes are click-free.
+  \item Typed complaints control the hardware (option A at least).
+  \item The latency, cycle, resource and power table is filled in with methods.
+  \item The demo video is recorded.
+\end{checklist}
+\end{donebox}
