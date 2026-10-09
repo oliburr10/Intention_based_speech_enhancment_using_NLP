@@ -1,3 +1,104 @@
 \chapter{Register Map of the Control Interface}\label{app:registers}
 
-PLACEHOLDER --- this chapter is being written.
+The control plane talks to \code{ise\_top} through an AXI4-Lite slave
+(\code{regs\_axil}) with 32-bit registers. This map is a starting point: adjust
+the formats to your \code{spec-v1}, but keep the \emph{semantics}. In particular,
+no parameter the datapath reads may change in the middle of a frame.
+
+\begin{table}[htbp]
+\centering\footnotesize
+\caption{Register map. Access: RW read/write, RO read-only, WO write-only,
+W1C write 1 to clear. SC = self-clearing.}
+\label{tab:regs:map}
+\begin{tabularx}{\textwidth}{@{}lllllL@{}}
+\toprule
+Offset & Name & Access & Reset & Bits & Description \\
+\midrule
+\code{0x00} & \reg{CTRL} & RW & \code{0x0} & 0 & \code{ENABLE}: process audio (0 = output silence) \\
+ & & & & 1 & \code{BYPASS}: pass input to output unprocessed (latency preserved) \\
+ & & & & 2 & \code{SOFT\_RESET} (SC): clear all state, restart pre-roll \\
+ & & & & 3 & \code{PREROLL\_RESTART} (SC): re-seed IMCRA, keep parameters \\
+\code{0x04} & \reg{STATUS} & RO/W1C & \code{0x0} & 0 & \code{PREROLL\_DONE} (RO) \\
+ & & & & 1 & \code{FRAME\_OVERRUN} (W1C): a frame missed its deadline \\
+ & & & & 2 & \code{COMMIT\_PENDING} (RO): a commit waits for a frame boundary \\
+ & & & & 3 & \code{COMMIT\_DONE} (W1C): the last commit took effect \\
+\code{0x08} & \reg{VERSION} & RO & build & 31:24 / 23:16 / 15:0 & major / minor / spec revision \\
+\code{0x0C} & \reg{FRAME\_CNT} & RO & \code{0x0} & 31:0 & frames processed since reset (wraps) \\
+\code{0x10} & \reg{OUTPUT\_GAIN} & RW & \code{0x2000} & 15:0 & shadow $g_\text{out}$, UQ3.13 (reset value = 1.0) \\
+\code{0x14} & \reg{TILT\_RATIO} & RW & \code{0x800000} & 23:0 & shadow tilt ratio $r$, UQ1.23 (reset value = 1.0, i.e.\ no tilt) \\
+\code{0x18} & \reg{PREROLL\_FRAMES} & RW & \code{0x5} & 7:0 & frames used to seed IMCRA \\
+\code{0x20} & \reg{LUT\_ADDR} & RW & \code{0x80000000} & 7:0 & address in the \emph{shadow} gain-table bank \\
+ & & & & 31 & \code{AUTO\_INC}: increment the address after each \reg{LUT\_WDATA} write \\
+\code{0x24} & \reg{LUT\_WDATA} & WO & --- & 15:0 & table entry, UQ3.13, written to the shadow bank at \reg{LUT\_ADDR} \\
+\code{0x28} & \reg{LUT\_COMMIT} & WO & --- & 0 & write 1: request a swap at the next frame boundary \\
+\code{0x2C} & \reg{LUT\_BANK} & RO & \code{0x0} & 0 & currently active bank \\
+\code{0x30} & \reg{CYCLES\_LAST} & RO & \code{0x0} & 31:0 & cycles used by the last frame (debug, tests H4) \\
+\code{0x34} & \reg{DBG\_SEL} & RW & \code{0x0} & 15:0 / 31:16 & probe select / bin index \\
+\code{0x38} & \reg{DBG\_DATA} & RO & --- & 31:0 & value of the selected probe for the selected bin in the last frame \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{Commit semantics}
+
+On a write of 1 to \reg{LUT\_COMMIT}, the hardware sets
+\code{STATUS.COMMIT\_PENDING}. At the next frame boundary it atomically:
+\begin{enumerate}
+  \item swaps the active and shadow gain-table banks;
+  \item copies the shadow \reg{OUTPUT\_GAIN} and \reg{TILT\_RATIO} into the
+        active registers the datapath reads;
+  \item clears \code{COMMIT\_PENDING} and sets \code{COMMIT\_DONE}.
+\end{enumerate}
+After a swap, the shadow bank holds the \emph{previous} table. The control plane
+must therefore write a complete table before every commit. It must never assume
+the shadow bank already contains the current one.
+
+\section*{Applying an intent update}
+
+\begin{enumerate}
+  \item The control plane classifies the complaint and computes the new
+        parameters: $\beta$, floor, $g_\text{out}$ and tilt.
+  \item It computes the 256-entry table with \code{make\_gain\_lut(beta,
+        floor)} (\cref{ch:codesign}) and $r=10^{\text{tilt}/(20(K-1))}$.
+  \item It waits until \code{STATUS.COMMIT\_PENDING} is 0.
+  \item It writes \reg{LUT\_ADDR} = \code{0x80000000} (address 0,
+        auto-increment), then 256 writes to \reg{LUT\_WDATA}.
+  \item It writes \reg{OUTPUT\_GAIN} and \reg{TILT\_RATIO}.
+  \item It writes 1 to \reg{LUT\_COMMIT}, then polls for
+        \code{STATUS.COMMIT\_DONE} and clears it by writing 1.
+\end{enumerate}
+
+\begin{lstlisting}[style=py,caption={A sketch of the Python driver on the PYNQ (check the MMIO API of your PYNQ version).}]
+from pynq import MMIO
+from golden.gainlut import make_gain_lut   # same code as the golden model
+
+CTRL, STATUS, OUTPUT_GAIN, TILT_RATIO = 0x00, 0x04, 0x10, 0x14
+LUT_ADDR, LUT_WDATA, LUT_COMMIT = 0x20, 0x24, 0x28
+PENDING, DONE = 1 << 2, 1 << 3
+
+class EnhancerRegs:
+    def __init__(self, base_addr):
+        self.mmio = MMIO(base_addr, 0x100)
+
+    def apply(self, beta, floor, g_out, tilt_db, n_bins):
+        while self.mmio.read(STATUS) & PENDING:
+            pass
+        self.mmio.write(LUT_ADDR, 0x80000000)              # address 0, auto-increment
+        for word in make_gain_lut(beta, floor):
+            self.mmio.write(LUT_WDATA, int(word))
+        r = 10 ** (tilt_db / (20 * (n_bins - 1)))
+        self.mmio.write(OUTPUT_GAIN, round(g_out * (1 << 13)))
+        self.mmio.write(TILT_RATIO, round(r * (1 << 23)))
+        self.mmio.write(LUT_COMMIT, 1)
+        while not self.mmio.read(STATUS) & DONE:
+            pass
+        self.mmio.write(STATUS, DONE)                      # W1C
+\end{lstlisting}
+
+\begin{tipbox}[Why \texttt{TILT\_RATIO} needs many bits]
+With $\pm\qty{12}{\dB}$ of tilt spread over about 1024 bins, $r$ lies within
+about $\pm0.14\%$ of 1, and it is raised to powers up to $K-1$. Its rounding
+error compounds over the bins. That is why this map gives it 23 fractional bits.
+If you chose a smaller frame configuration, or a log-domain tilt, recompute the
+error at the last bin and resize the register.
+\end{tipbox}
