@@ -6,7 +6,7 @@ import sys
 from PySide6.QtCore import QPoint, QRect, QTimer
 from PySide6.QtWidgets import QApplication
 
-from . import config, context
+from . import activity, config, context
 from .agent import AgentBridge
 from .cat_widget import CatWidget
 from .chat_window import ChatWindow
@@ -54,6 +54,7 @@ class CatApp:
 
         self.agent.message.connect(self.on_agent_message)
         self.agent.busy_changed.connect(self.on_busy)
+        self.agent.coding.connect(lambda: self.cat.set_coding(True))
         self.agent.permission_requested.connect(self.on_permission)
         self.agent.tip.connect(self.on_tip)
         self.agent.hide_requested.connect(self.set_hidden_for_capture)
@@ -93,6 +94,7 @@ class CatApp:
     def send(self, text: str) -> None:
         notes = []
         ctx = self.watcher.last()
+        self.cat.set_coding(activity.looks_like_coding(text, ctx.app if ctx else ""))
         if ctx is not None:
             notes.append(ctx.describe())
         if self._last_tip:

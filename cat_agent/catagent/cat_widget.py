@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QMenu, QWidget
 
 from . import config, sprites
 
+CODE_BADGES = ["</>", "{ }", "( )", "</>", ";"]
 BADGE_SPACE = 26   # room above the cat for the "...", "!" and "z" badges
 DRAG_THRESHOLD = 4  # pixels the mouse must move before a press counts as a drag
 
@@ -43,6 +44,8 @@ class CatWidget(QWidget):
         self._frame = "idle"
         self._frame_until = 0.0
         self._busy = False
+        self._coding = False
+        self._pause_until = 0.0
         self._alert = False
         self._watching = False
         self._last_attention = time.monotonic()
@@ -58,7 +61,14 @@ class CatWidget(QWidget):
 
     def set_busy(self, busy: bool) -> None:
         self._busy = busy
+        if not busy:
+            self._coding = False
         self.poke()
+
+    def set_coding(self, coding: bool) -> None:
+        """While busy on code, the cat puts its glasses on and types on its laptop."""
+        self._coding = coding
+        self.update()
 
     def set_alert(self, alert: bool) -> None:
         self._alert = alert
@@ -82,7 +92,14 @@ class CatWidget(QWidget):
     def _tick(self) -> None:
         self._tick_count += 1
         now = time.monotonic()
-        if self._busy:
+        if self._busy and self._coding:
+            if now < self._pause_until:
+                self._frame = "code_glow"  # stops typing to read the screen
+            else:
+                self._frame = "code_a" if self._tick_count % 2 else "code_b"
+                if random.random() < 0.05:
+                    self._pause_until = now + random.uniform(0.6, 1.5)
+        elif self._busy:
             self._frame = "look_up"
         elif self.sleeping:
             self._frame = "sleep"
@@ -101,6 +118,8 @@ class CatWidget(QWidget):
         p.drawPixmap(0, BADGE_SPACE, self._pixmaps[self._frame])
         if self._alert:
             self._badge(p, "!", QColor("#e5484d"))
+        elif self._busy and self._coding:
+            self._badge(p, CODE_BADGES[self._tick_count // 5 % len(CODE_BADGES)], QColor("#ffffff"))
         elif self._busy:
             self._badge(p, "." * (1 + self._tick_count // 3 % 3), QColor("#ffffff"))
         elif self.sleeping:

@@ -12,6 +12,12 @@ PALETTE = {
     "P": "#f2a0b0",  # pink (nose, inner ears)
     "E": "#2b2b2b",  # eyes
     "G": "#ffffff",  # eye shine
+    "F": "#1d1d1f",  # glasses frame
+    "L": "#cfe8ff",  # glasses lens
+    "C": "#8fd0ff",  # lens lit up by the screen
+    "N": "#5b6570",  # laptop edge
+    "M": "#a9b2bc",  # laptop lid
+    "H": "#e8edf2",  # laptop logo
 }
 
 # Sitting cat, facing forward, tail curled on the right.
@@ -65,6 +71,43 @@ FRAMES = {
     }),
 }
 FRAMES["sleep"] = FRAMES["blink"]
+
+# Coding: glasses on, eyes down at the laptop, paws tapping away at the keyboard.
+_GLASSES = {
+    4: "KOFFFFOOOOFFFFOK....",
+    5: "KOFLLFFFFFFLLFOK....",
+    6: "KOFLEFOOOOFLEFOK....",
+    7: "KOFFFFWPPWFFFFOK....",
+}
+_LAPTOP = {
+    11: "..KOOWWWWWWOOK......",
+    12: ".KONNNNNNNNNNOK.....",
+    13: ".KONMMMMMMMMNOK..KK.",
+    14: ".KONMMHMMHMMNOK.KOOK",
+    15: ".KONMMHHHHMMNOK.KDK.",
+    16: ".KONMMMHHMMMNOK.KOK.",
+    17: "NNNNNNNNNNNNNNNNNK..",
+    18: ".NNNNNNNNNNNNNNNN...",
+}
+# Each paw is a 2x2 white blob over the edge of the lid; up on one side, down on the other.
+_PAWS_LEFT_UP = {
+    13: ".KWWMMMMMMMMNOK..KK.",
+    14: ".KWWMMHMMHMMNOK.KOOK",
+    15: ".KONMMHHHHMMWWK.KDK.",
+    16: ".KONMMMHHMMMWWK.KOK.",
+}
+_PAWS_RIGHT_UP = {
+    13: ".KONMMMMMMMMWWK..KK.",
+    14: ".KONMMHMMHMMWWK.KOOK",
+    15: ".KWWMMHHHHMMNOK.KDK.",
+    16: ".KWWMMMHHMMMNOK.KOK.",
+}
+FRAMES["code_a"] = _with_rows(BASE, {**_GLASSES, **_LAPTOP, **_PAWS_LEFT_UP})
+FRAMES["code_b"] = _with_rows(BASE, {**_GLASSES, **_LAPTOP, **_PAWS_RIGHT_UP})
+FRAMES["code_glow"] = _with_rows(FRAMES["code_a"], {
+    5: "KOFCCFFFFFFCCFOK....",
+    6: "KOFCEFOOOOFCEFOK....",
+})
 
 WIDTH = max(len(r) for r in BASE)
 HEIGHT = len(BASE)

@@ -23,7 +23,7 @@ from claude_agent_sdk import (
 )
 from PySide6.QtCore import QObject, Signal
 
-from . import config, context, memory, tools
+from . import activity, config, context, memory, tools
 
 # Tools the cat may use without asking: they only read or look things up.
 # Everything else goes through can_use_tool, which asks you in the chat window.
@@ -79,6 +79,7 @@ def permission_details(name: str, args: dict) -> str:
 class AgentBridge(QObject):
     message = Signal(str, str)                    # kind ("assistant" | "tool" | "info" | "error"), text
     busy_changed = Signal(bool)
+    coding = Signal()                             # the current chat turn turned out to be about code
     permission_requested = Signal(str, str, str)  # request id, tool name, details
     tip = Signal(str, str, str, int)              # title, message, file path, line
     hide_requested = Signal(bool)                 # hide/show the cat's windows around screenshots
@@ -186,6 +187,8 @@ class AgentBridge(QObject):
                     self.message.emit("assistant", block.text)
                 elif isinstance(block, ToolUseBlock) and block.name != "ToolSearch":
                     self.message.emit("tool", describe_tool(block.name, block.input))
+                    if activity.is_coding_tool(block.name, block.input):
+                        self.coding.emit()
         elif isinstance(msg, ResultMessage) and msg.is_error:
             detail = "; ".join(msg.errors or []) or msg.subtype
             self.message.emit("error", f"The turn ended with an error: {detail}")

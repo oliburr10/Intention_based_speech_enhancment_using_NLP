@@ -59,6 +59,13 @@ Restart the cat after you change these.
   command**, it shows you exactly what it wants to do, with **Allow** and **Don't** buttons.
 - The cat's moods: `...` means it's thinking, a red `!` means it has a tip for you, and `zZ`
   means it's asleep (click to wake it).
+- **Coding mode:** while the cat is working on a coding task, it puts on its glasses and types
+  away on a little laptop, stopping now and then to read the screen. A task counts as coding
+  if you asked from a code editor or terminal, if your message sounds like code (bugs, tests,
+  `.py` files and so on), or as soon as the cat starts editing files or running commands. The
+  glasses come off when it's done. The rules are in [`catagent/activity.py`](catagent/activity.py).
+
+  ![Ginger putting on glasses to code](docs/cat_coding.gif)
 
 ### Watch mode
 
@@ -103,6 +110,7 @@ catagent/
   chat_window.py  the chat UI and Allow/Don't permission prompts
   tip_bubble.py   the speech bubble for tips
   agent.py        the Claude Agent SDK session, on a background asyncio thread
+  activity.py     decides when a task counts as coding (glasses + laptop time)
   tools.py        the cat's own tools (screen, context, tips, memory)
   context.py      macOS helpers: frontmost app, browser tab, Word doc, screenshots
   memory.py       long-term memory file
