@@ -36,6 +36,7 @@ class CatApp:
         self._hidden_for_capture: list = []
         self._watched_context = None
 
+        self.cat.keep_awake = lambda: self.chat.isVisible() or self.bubble.isVisible()
         self.cat.clicked.connect(self.toggle_chat)
         self.cat.moved.connect(self.follow_cat)
         self.cat.look_requested.connect(self.look_at_screen)

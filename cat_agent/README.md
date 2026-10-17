@@ -57,8 +57,12 @@ Restart the cat after you change these.
   cat, so "why is this broken?" just works.
 - The cat reads, searches and browses without asking. Before it **edits a file or runs a
   command**, it shows you exactly what it wants to do, with **Allow** and **Don't** buttons.
-- The cat's moods: `...` means it's thinking, a red `!` means it has a tip for you, and `zZ`
-  means it's asleep (click to wake it).
+- The cat's moods: `...` means it's thinking, and a red `!` means it has a tip for you.
+- **Nap time:** after 30 seconds with nothing to do (`SLEEP_AFTER_SEC`), the cat curls up,
+  rests its head on its paws and breathes slowly while little z's float up from its head.
+  It stays awake while the chat or a tip is open, and wakes up when you click it.
+
+  ![Ginger napping](docs/cat_sleeping.gif)
 - **Coding mode:** while the cat is working on a coding task, it puts on its glasses and types
   away on a little laptop, stopping now and then to read the screen. A task counts as coding
   if you asked from a code editor or terminal, if your message sounds like code (bugs, tests,
@@ -93,7 +97,8 @@ All the settings are in [`catagent/config.py`](catagent/config.py):
 - `MODEL`: which Claude model it uses
 - `WORKSPACE`: the folder it starts in (point it at your code folder)
 - `SCALE`: how big the cat is
-- `WATCH_INTERVAL_SEC`, `SLEEP_AFTER_SEC`
+- `SLEEP_AFTER_SEC`: how long before it naps
+- `WATCH_INTERVAL_SEC`
 
 The cat's look is defined in [`catagent/sprites.py`](catagent/sprites.py) as ASCII grids,
 one letter per pixel. Edit the letters to redraw it, or add frames.

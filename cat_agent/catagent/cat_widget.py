@@ -1,7 +1,9 @@
 """The cat itself: a small always-on-top window you can drag around and click."""
 
+import math
 import random
 import time
+from typing import Callable
 
 from PySide6.QtCore import QPoint, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QColor, QFont, QPainter, QPainterPath, QPen
@@ -10,7 +12,11 @@ from PySide6.QtWidgets import QMenu, QWidget
 from . import config, sprites
 
 CODE_BADGES = ["</>", "{ }", "( )", "</>", ";"]
-BADGE_SPACE = 26   # room above the cat for the "...", "!" and "z" badges
+BADGE_SPACE = 26   # room above the cat for the "...", "!" and "</>" badges
+BREATH_SEC = 2.6   # one slow breath while asleep
+Z_RISE_SEC = 3.0   # how long each floating z takes to drift up and fade away
+Z_COUNT = 3
+Z_UNIT = 2         # screen pixels per pixel of a floating z
 DRAG_THRESHOLD = 4  # pixels the mouse must move before a press counts as a drag
 
 
@@ -52,6 +58,8 @@ class CatWidget(QWidget):
         self._tick_count = 0
         self._press_pos: QPoint | None = None
         self._drag_offset: QPoint | None = None
+        # The app sets this so the cat stays awake while its chat or a tip is open.
+        self.keep_awake: Callable[[], bool] = lambda: False
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
@@ -92,6 +100,8 @@ class CatWidget(QWidget):
     def _tick(self) -> None:
         self._tick_count += 1
         now = time.monotonic()
+        if self.keep_awake():
+            self._last_attention = now
         if self._busy and self._coding:
             if now < self._pause_until:
                 self._frame = "code_glow"  # stops typing to read the screen
@@ -102,7 +112,7 @@ class CatWidget(QWidget):
         elif self._busy:
             self._frame = "look_up"
         elif self.sleeping:
-            self._frame = "sleep"
+            self._frame = "sleep_b" if now % BREATH_SEC < BREATH_SEC * 0.4 else "sleep_a"
         elif now >= self._frame_until:
             roll = random.random()
             if self._frame != "idle":
@@ -123,8 +133,31 @@ class CatWidget(QWidget):
         elif self._busy:
             self._badge(p, "." * (1 + self._tick_count // 3 % 3), QColor("#ffffff"))
         elif self.sleeping:
-            self._badge(p, "z" if self._tick_count // 6 % 2 else "zZ", QColor("#ffffff"))
+            self._draw_zs(p)
         p.end()
+
+    def _draw_zs(self, p: QPainter) -> None:
+        """Pixel z's that float up from the sleeping cat's head, growing and fading as they go."""
+        now = time.monotonic()
+        start_x = 7 * config.SCALE
+        start_y = BADGE_SPACE + 8 * config.SCALE
+        for i in range(Z_COUNT):
+            t = (now / Z_RISE_SEC + i / Z_COUNT) % 1.0
+            size = 4 + round(t * 2)  # 4x4 pixels growing to 6x6
+            x = start_x + t * 44 + math.sin(t * 2 * math.pi) * 3
+            y = start_y - t * 48 - size * Z_UNIT
+            fade_in, fade_out = min(1.0, t / 0.15), min(1.0, (1.0 - t) / 0.35)
+            p.setOpacity(min(fade_in, fade_out))
+            self._pixel_z(p, round(x / Z_UNIT) * Z_UNIT, round(y / Z_UNIT) * Z_UNIT, size)
+        p.setOpacity(1.0)
+
+    def _pixel_z(self, p: QPainter, x: int, y: int, size: int) -> None:
+        cells = [(c, 0) for c in range(size)] + [(c, size - 1) for c in range(size)]
+        cells += [(size - 1 - r, r) for r in range(1, size - 1)]
+        u = Z_UNIT
+        for color, grow in ((QColor(sprites.PALETTE["K"]), 1), (QColor("#ffffff"), 0)):
+            for cx, cy in cells:
+                p.fillRect(x + cx * u - grow, y + cy * u - grow, u + 2 * grow, u + 2 * grow, color)
 
     def _badge(self, p: QPainter, text: str, fill: QColor) -> None:
         x = self.width() - BADGE_SPACE - 14

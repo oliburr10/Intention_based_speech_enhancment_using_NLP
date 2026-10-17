@@ -70,7 +70,27 @@ FRAMES = {
         6: "KOOEGOOOOOOEGOOK....",
     }),
 }
-FRAMES["sleep"] = FRAMES["blink"]
+
+# Sleeping: curled up lying down, head on its paws, tail wrapped round the front.
+# The two frames alternate so the cat breathes; on the in-breath its back rises.
+_EMPTY = "." * 20
+FRAMES["sleep_a"] = [_EMPTY] * 9 + [
+    "..KK..KK............",
+    ".KPOKKOPK...KKKKK...",
+    ".KOOOOOOKKKKOODOOKK.",
+    "KOOOOOOOOOOOOOOOOOOK",
+    "KOKKOOKKOOODOODOODOK",
+    "KOOOPPOOOOOOOOOOOOOK",
+    "KWWWWWWWWKOOOOOOOOOK",
+    ".KWWKWWKKKKKKKKKKKOK",
+    ".KKKKKKWWOOODOOODOOK",
+    "...KKKKKKKKKKKKKKKK.",
+]
+FRAMES["sleep_b"] = _with_rows(FRAMES["sleep_a"], {
+    9: "..KK..KK....KKKKK...",
+    10: ".KPOKKOPK.KKOODOOKK.",
+    11: ".KOOOOOOKKOOOOOOOOOK",
+})
 
 # Coding: glasses on, eyes down at the laptop, paws tapping away at the keyboard.
 _GLASSES = {

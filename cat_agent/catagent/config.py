@@ -21,7 +21,7 @@ WORKSPACE = Path(os.environ.get("CAT_WORKSPACE", Path.home())).expanduser()
 
 # Look and feel.
 SCALE = 4                 # each pixel of the cat becomes SCALE x SCALE screen pixels
-SLEEP_AFTER_SEC = 5 * 60  # the cat dozes off after this long without attention
+SLEEP_AFTER_SEC = 30      # the cat curls up for a nap after this long with nothing to do
 
 # Watch mode: every WATCH_INTERVAL_SEC the cat glances at your screen and pops up a tip
 # if it spots a problem. Off by default because every glance is a paid model call.
