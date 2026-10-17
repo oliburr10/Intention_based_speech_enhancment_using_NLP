@@ -1,0 +1,4 @@
+claude-agent-sdk>=0.2
+PySide6>=6.7
+# Optional: hides the Dock icon so only the cat shows.
+pyobjc-framework-Cocoa; sys_platform == "darwin"
