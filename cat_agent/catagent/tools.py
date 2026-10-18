@@ -28,7 +28,7 @@ def build_server(
     @tool(
         "what_am_i_working_on",
         "Which app, window, browser tab or document the user was using most recently "
-        "(not counting the cat's own chat window).",
+        "(not counting the cat itself).",
         {},
     )
     async def what_am_i_working_on(args):
@@ -93,6 +93,16 @@ def build_server(
         return _text(context.open_in_editor(args["file_path"], int(args.get("line", 0))))
 
     @tool(
+        "copy_to_clipboard",
+        "Put text (code, a rewritten paragraph, a command) on the user's clipboard so they can "
+        "paste it. Use this whenever they ask for something to copy, since your reply only "
+        "shows up in a small speech cloud.",
+        {"text": str},
+    )
+    async def copy_to_clipboard(args):
+        return _text(context.copy_to_clipboard(args["text"]))
+
+    @tool(
         "remember",
         "Save a lasting fact about the user (a preference, a project, how they like things "
         "done) to long-term memory.",
@@ -102,7 +112,9 @@ def build_server(
         memory.add(args["fact"])
         return _text("Remembered.")
 
-    tools = [what_am_i_working_on, look_at_screen, show_tip_tool, open_in_editor, remember]
+    tools = [
+        what_am_i_working_on, look_at_screen, show_tip_tool, open_in_editor, copy_to_clipboard, remember,
+    ]
     server = create_sdk_mcp_server(SERVER_NAME, tools=tools)
     names = [f"mcp__{SERVER_NAME}__{t.name}" for t in tools]
     return server, names

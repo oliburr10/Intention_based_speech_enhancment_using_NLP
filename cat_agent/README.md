@@ -1,10 +1,11 @@
 # Ginger: a pixel cat that is your personal agent
 
-![Ginger's animation frames](docs/cat.png)
+![Ginger waking up, taking an instruction and saying what it did](docs/cat_flow.gif)
 
 Ginger is a small ginger-and-white pixel cat that lives on your Mac desktop. You can drag
-the cat anywhere. Click it and a chat window opens where you can ask for help with whatever
-you're doing. The agent behind it is Claude, running through the
+the cat anywhere. Click it and an input bar pops up underneath it. Tell it what to do, and
+when it's finished it tells you what it did in a pixel speech cloud, such as **Code
+changed ✓** or **Text changed ✓**. The agent behind it is Claude, running through the
 [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk), which is the same engine as
 Claude Code. That means it can read and edit code, run commands, search your files and the
 web, and it also gets a few cat-specific tools:
@@ -13,8 +14,9 @@ web, and it also gets a few cat-specific tools:
 |---|---|
 | `what_am_i_working_on` | Reports the app, window, browser tab or Word document you were last using |
 | `look_at_screen` | Takes a screenshot so the cat can see what you see |
-| `show_tip` | Pops up a speech bubble next to the cat saying what's wrong and where, with a **Show me** button that opens the file at the right line |
+| `show_tip` | Points at a problem in a local file, which gives the cat's speech cloud a **Show me** button that opens the file at the right line |
 | `open_in_editor` | Opens a file in VS Code at a given line |
+| `copy_to_clipboard` | Puts code or text on your clipboard for you to paste |
 | `remember` | Saves lasting facts about you to `~/.ginger/memory.md` |
 
 ## Setup (macOS)
@@ -49,18 +51,26 @@ Restart the cat after you change these.
 ## Using it
 
 - **Drag** the cat anywhere. It remembers where you left it.
-- **Click** the cat to open or close the chat. **Enter** sends a message and **Shift+Enter**
-  starts a new line.
-- **Right-click** the cat for these options: *Look at my screen*, *Watch mode*,
-  *New conversation*, *Quit*.
-- Each message automatically includes the app or file you were in just before clicking the
-  cat, so "why is this broken?" just works.
-- The cat reads, searches and browses without asking. Before it **edits a file or runs a
-  command**, it shows you exactly what it wants to do, with **Allow** and **Don't** buttons.
+- **Click** the cat and an input bar pops up underneath it. Type what you want and press
+  **Enter** (or **Esc** to close it). The **+** button attaches a file for the cat to look at.
+  The microphone is a placeholder for voice input, which isn't built yet.
+- When the cat is done, a **speech cloud** pops up above its head saying what it did:
+  *Code changed*, *Text changed*, *File changed*, *Command run*, *Copied to clipboard* or
+  *Noted*, plus a sentence or two about it. A question just gets its answer. Click the cloud
+  to dismiss it, or it goes away by itself. An action only counts once it actually worked, so
+  an edit you turned down never shows up as "Code changed".
+- Before the cat **edits a file or runs a command**, the cloud asks first (for example "Can I
+  change train.py?"), shows the change, and waits for **Allow** or **Don't**. Reading,
+  searching and browsing happen without asking.
+- **Right-click** the cat for these options: *Talk to Ginger*, *Stop what you're doing*,
+  *Look at my screen*, *Watch mode*, *New conversation*, *Quit*.
+- Each instruction automatically includes the app or file you were in just before clicking
+  the cat, so "fix this" just works.
 - The cat's moods: `...` means it's thinking, and a red `!` means it has a tip for you.
 - **Nap time:** after 30 seconds with nothing to do (`SLEEP_AFTER_SEC`), the cat curls up,
   rests its head on its paws and breathes slowly while little z's float up from its head.
-  It stays awake while the chat or a tip is open, and wakes up when you click it.
+  It stays awake while the input bar or a cloud is open. Click it and it opens its eyes, has
+  a big stretch and a yawn, and then the input bar appears.
 
   ![Ginger napping](docs/cat_sleeping.gif)
 - **Coding mode:** while the cat is working on a coding task, it puts on its glasses and types
@@ -76,7 +86,8 @@ Restart the cat after you change these.
 With watch mode on, the cat glances at your screen whenever you switch to something new
 and stay on it for a little while. It checks at most once every
 `WATCH_INTERVAL_SEC` (2 minutes by default). If it spots a real problem, such as an error
-message, a failing test, a LaTeX error or an obvious typo, it pops up a tip. If not, it stays
+message, a failing test, a LaTeX error or an obvious typo, it says so in its speech cloud
+and shows a red `!`. If not, it stays
 quiet. Watch-mode checks can't edit anything. Each check is a paid model call that includes a
 screenshot, so watch mode is **off by default**.
 
@@ -112,11 +123,11 @@ run.py
 catagent/
   app.py          wires everything together; window placement, watch mode, saved state
   cat_widget.py   the draggable, animated cat window
-  chat_window.py  the chat UI and Allow/Don't permission prompts
-  tip_bubble.py   the speech bubble for tips
+  command_bar.py  the input bar that pops up under the cat
+  speech_cloud.py the pixel speech cloud: results, tips and Allow/Don't questions
   agent.py        the Claude Agent SDK session, on a background asyncio thread
-  activity.py     decides when a task counts as coding (glasses + laptop time)
-  tools.py        the cat's own tools (screen, context, tips, memory)
+  activity.py     what counts as coding, and the "Code changed" style labels
+  tools.py        the cat's own tools (screen, context, tips, clipboard, memory)
   context.py      macOS helpers: frontmost app, browser tab, Word doc, screenshots
   memory.py       long-term memory file
   sprites.py      the pixel art

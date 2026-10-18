@@ -113,6 +113,13 @@ def open_in_editor(file_path: str, line: int = 0) -> str:
     return f"Opened {path}."
 
 
+def copy_to_clipboard(text: str) -> str:
+    if not IS_MAC:
+        return "The clipboard is only supported on macOS."
+    subprocess.run(["pbcopy"], input=text, text=True, check=True, timeout=5)
+    return "Copied to the clipboard."
+
+
 class ContextWatcher:
     """Polls the frontmost app in the background and remembers the last one that wasn't the cat.
 

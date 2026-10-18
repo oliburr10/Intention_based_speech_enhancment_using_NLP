@@ -6,6 +6,7 @@ back to the UI through Qt signals, which are safe to emit from any thread.
 
 import asyncio
 import json
+import sys
 import threading
 import uuid
 import warnings
@@ -19,14 +20,16 @@ from claude_agent_sdk import (
     PermissionResultDeny,
     ResultMessage,
     TextBlock,
+    ToolResultBlock,
     ToolUseBlock,
+    UserMessage,
 )
 from PySide6.QtCore import QObject, Signal
 
 from . import activity, config, context, memory, tools
 
 # Tools the cat may use without asking: they only read or look things up.
-# Everything else goes through can_use_tool, which asks you in the chat window.
+# Everything else goes through can_use_tool, which asks you in the speech cloud.
 SAFE_TOOLS = ["Read", "Glob", "Grep", "WebSearch", "WebFetch"]
 warnings.filterwarnings("ignore", category=CanUseToolShadowedWarning)
 
@@ -43,44 +46,34 @@ with a single word: DONE."""
 
 
 def describe_tool(name: str, args: dict) -> str:
-    """A short human-readable line for a tool call, for the chat log and permission prompts."""
     short = name.removeprefix(f"mcp__{tools.SERVER_NAME}__")
-    if name == "Bash":
-        return f"Run: {args.get('command', '')}"
-    if name in ("Edit", "Write", "Read", "NotebookEdit"):
-        return f"{name}: {args.get('file_path', '')}"
-    if name in ("Glob", "Grep"):
-        return f"{name}: {args.get('pattern', '')}"
-    if name == "WebSearch":
-        return f"Search the web: {args.get('query', '')}"
-    if name == "WebFetch":
-        return f"Fetch: {args.get('url', '')}"
-    if short == "look_at_screen":
-        return "Looking at your screen"
-    if short == "what_am_i_working_on":
-        return "Checking what you're working on"
-    return f"{short}: {json.dumps(args)[:120]}"
+    return f"use {short}: {json.dumps(args)[:200]}"
 
 
-def permission_details(name: str, args: dict) -> str:
-    """The longer text shown when the cat asks to use a tool."""
+def permission_question(name: str, args: dict) -> tuple[str, str]:
+    """What the cat asks before using a tool that changes something: (question, details)."""
+    file_name = str(args.get("file_path", "")).rsplit("/", 1)[-1]
     if name == "Edit":
-        return (
-            f"Edit {args.get('file_path', '')}\n\n"
-            f"Replace:\n{args.get('old_string', '')[:600]}\n\nWith:\n{args.get('new_string', '')[:600]}"
-        )
+        old, new = args.get("old_string", ""), args.get("new_string", "")
+        return f"Can I change {file_name}?", f"{_clip(old)}\n→\n{_clip(new)}"
     if name == "Write":
-        return f"Write {args.get('file_path', '')}\n\n{args.get('content', '')[:800]}"
+        return f"Can I write {file_name}?", _clip(args.get("content", ""))
     if name == "Bash":
-        return f"Run this command:\n\n{args.get('command', '')}"
-    return describe_tool(name, args)
+        return "Can I run this?", _clip(args.get("command", ""))
+    return f"Can I {describe_tool(name, args)}?", ""
+
+
+def _clip(text: str, limit: int = 220) -> str:
+    text = text.strip()
+    return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
 class AgentBridge(QObject):
-    message = Signal(str, str)                    # kind ("assistant" | "tool" | "info" | "error"), text
+    finished = Signal(str, str)                   # what it did ("Code changed · Command run"), its reply
+    failed = Signal(str)                          # what went wrong
     busy_changed = Signal(bool)
     coding = Signal()                             # the current chat turn turned out to be about code
-    permission_requested = Signal(str, str, str)  # request id, tool name, details
+    permission_requested = Signal(str, str, str)  # request id, question, details
     tip = Signal(str, str, str, int)              # title, message, file path, line
     hide_requested = Signal(bool)                 # hide/show the cat's windows around screenshots
 
@@ -92,6 +85,7 @@ class AgentBridge(QObject):
         self._pending: dict[str, asyncio.Future] = {}
         self._client: ClaudeSDKClient | None = None
         self._watching = False
+        self._reset_turn()
         self.busy = False
         self._thread = threading.Thread(target=self._run, name="cat-agent", daemon=True)
 
@@ -159,12 +153,19 @@ class AgentBridge(QObject):
                 break
             if kind == "reset":
                 await self._disconnect()
-                self.message.emit("info", "Fresh start! 🐾")
+                self.finished.emit("Fresh start! 🐾", "I've forgotten our conversation (but not what I remember about you).")
                 continue
             await self._chat_turn(payload)
         await self._disconnect()
 
+    def _reset_turn(self) -> None:
+        self._done: list[str] = []                 # things the cat actually did this turn
+        self._in_flight: dict[str, str] = {}       # tool_use_id -> what it will have done if it works
+        self._reply = ""
+        self._error = ""
+
     async def _chat_turn(self, prompt: str) -> None:
+        self._reset_turn()
         self._set_busy(True)
         try:
             if self._client is None:
@@ -175,23 +176,36 @@ class AgentBridge(QObject):
             async for msg in self._client.receive_response():
                 self._handle(msg)
         except Exception as e:
-            self.message.emit("error", f"Something went wrong: {e}")
+            self._error = str(e)
             await self._disconnect()
         finally:
             self._set_busy(False)
+        if self._error:
+            self.failed.emit(self._error)
+        else:
+            self.finished.emit(" · ".join(self._done), self._reply)
 
     def _handle(self, msg) -> None:
         if isinstance(msg, AssistantMessage):
             for block in msg.content:
                 if isinstance(block, TextBlock) and block.text.strip():
-                    self.message.emit("assistant", block.text)
-                elif isinstance(block, ToolUseBlock) and block.name != "ToolSearch":
-                    self.message.emit("tool", describe_tool(block.name, block.input))
+                    self._reply = block.text.strip()
+                elif isinstance(block, ToolUseBlock):
+                    label = activity.action_label(block.name, block.input)
+                    if label:
+                        self._in_flight[block.id] = label
                     if activity.is_coding_tool(block.name, block.input):
                         self.coding.emit()
+        elif isinstance(msg, UserMessage) and isinstance(msg.content, list):
+            # A tool only counts as done once its result comes back without an error,
+            # so a denied or failed edit never shows up as "Code changed".
+            for block in msg.content:
+                if isinstance(block, ToolResultBlock):
+                    label = self._in_flight.pop(block.tool_use_id, None)
+                    if label and not block.is_error and label not in self._done:
+                        self._done.append(label)
         elif isinstance(msg, ResultMessage) and msg.is_error:
-            detail = "; ".join(msg.errors or []) or msg.subtype
-            self.message.emit("error", f"The turn ended with an error: {detail}")
+            self._error = "; ".join(msg.errors or []) or msg.subtype
 
     async def _watch_check(self, context_text: str) -> None:
         self._watching = True
@@ -201,7 +215,7 @@ class AgentBridge(QObject):
                 async for _ in client.receive_response():
                     pass
         except Exception as e:
-            self.message.emit("error", f"Watch mode check failed: {e}")
+            print(f"Watch mode check failed: {e}", file=sys.stderr)
         finally:
             self._watching = False
 
@@ -223,7 +237,7 @@ class AgentBridge(QObject):
         request_id = uuid.uuid4().hex
         future = self._loop.create_future()
         self._pending[request_id] = future
-        self.permission_requested.emit(request_id, tool_name, permission_details(tool_name, tool_input))
+        self.permission_requested.emit(request_id, *permission_question(tool_name, tool_input))
         if await future:
             return PermissionResultAllow()
         return PermissionResultDeny(message=f"{config.USER_NAME} said no. Ask what they'd prefer instead.")

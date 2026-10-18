@@ -129,6 +129,35 @@ FRAMES["code_glow"] = _with_rows(FRAMES["code_a"], {
     6: "KOFCEFOOOOFCEFOK....",
 })
 
+# Waking up when clicked: eyes open, a big front-paws-forward stretch, then a yawn.
+FRAMES["wake"] = _with_rows(FRAMES["sleep_a"], {
+    13: "KOEGOOEGOOODOODOODOK",
+})
+FRAMES["stretch"] = [_EMPTY] * 3 + [
+    ".................KK.",
+    ".................KOK",
+    ".................KOK",
+    "...........KKKKKKKOK",
+    "..........KOODOODOOK",
+    ".........KOOOOOOOOOK",
+    "..KK..KK.KOOOOOOOOOK",
+    ".KPOKKOPKOOOOOOOOOOK",
+    ".KOOOOOOOOOODOOOOOOK",
+    "KOOOOOOOOOOOKKKKOOOK",
+    "KOKKOOKKOOKK...KOOK.",
+    "KOOOPPOOOK.....KOOK.",
+    "KWWWWWWWWK.....KOOK.",
+    "KWWWWWWWWWWK...KOOK.",
+    "KWKWWKWWWWWK...KWWK.",
+    ".KKKKKKKKKK....KKKK.",
+]
+FRAMES["yawn"] = _with_rows(BASE, {
+    5: "KOOOOOOOOOOOOOOK....",
+    6: "KOOKKOOOOOOKKOOK....",
+    8: "KWWWWWKPPKWWWWWK....",
+    9: ".KWWWWWKKWWWWWK.....",
+})
+
 WIDTH = max(len(r) for r in BASE)
 HEIGHT = len(BASE)
 

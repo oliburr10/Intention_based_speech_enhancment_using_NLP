@@ -18,6 +18,8 @@ Z_RISE_SEC = 3.0   # how long each floating z takes to drift up and fade away
 Z_COUNT = 3
 Z_UNIT = 2         # screen pixels per pixel of a floating z
 DRAG_THRESHOLD = 4  # pixels the mouse must move before a press counts as a drag
+# Played when you click the sleeping cat: (frame, seconds).
+WAKE_UP = [("wake", 0.35), ("stretch", 0.9), ("yawn", 0.55), ("idle", 0.15)]
 
 
 def floating_window_flags() -> Qt.WindowType:
@@ -35,6 +37,7 @@ class CatWidget(QWidget):
     new_conversation_requested = Signal()
     watch_toggled = Signal(bool)
     quit_requested = Signal()
+    stop_requested = Signal()
     moved = Signal()
 
     def __init__(self):
@@ -58,7 +61,10 @@ class CatWidget(QWidget):
         self._tick_count = 0
         self._press_pos: QPoint | None = None
         self._drag_offset: QPoint | None = None
-        # The app sets this so the cat stays awake while its chat or a tip is open.
+        self._sequence: list[tuple[str, float]] = []
+        self._sequence_until = 0.0
+        self._after_sequence: Callable[[], None] | None = None
+        # The app sets this so the cat stays awake while its input bar or speech cloud is open.
         self.keep_awake: Callable[[], bool] = lambda: False
 
         self._timer = QTimer(self)
@@ -93,7 +99,15 @@ class CatWidget(QWidget):
     @property
     def sleeping(self) -> bool:
         idle = time.monotonic() - self._last_attention
-        return not self._busy and not self._alert and idle > config.SLEEP_AFTER_SEC
+        waking = bool(self._sequence)
+        return not (self._busy or self._alert or waking) and idle > config.SLEEP_AFTER_SEC
+
+    def wake_up(self, then: Callable[[], None] | None = None) -> None:
+        """Open eyes, stretch, yawn, then call `then`."""
+        self._sequence = list(WAKE_UP)
+        self._sequence_until = 0.0
+        self._after_sequence = then
+        self.poke()
 
     # ---- animation ----------------------------------------------------------------------
 
@@ -102,7 +116,15 @@ class CatWidget(QWidget):
         now = time.monotonic()
         if self.keep_awake():
             self._last_attention = now
-        if self._busy and self._coding:
+        if self._sequence and not self._busy:
+            if now >= self._sequence_until:
+                self._frame, duration = self._sequence.pop(0)
+                self._sequence_until = now + duration
+                if not self._sequence and self._after_sequence:
+                    QTimer.singleShot(int(duration * 1000), self._after_sequence)
+                    self._after_sequence = None
+            self._last_attention = now
+        elif self._busy and self._coding:
             if now < self._pause_until:
                 self._frame = "code_glow"  # stops typing to read the screen
             else:
@@ -200,13 +222,19 @@ class CatWidget(QWidget):
         was_drag = self._drag_offset is not None
         self._press_pos = self._drag_offset = None
         self.setCursor(Qt.CursorShape.OpenHandCursor)
-        self.poke()
-        if not was_drag:
+        if was_drag:
+            self.poke()
+        elif self.sleeping:
+            self.wake_up(then=self.clicked.emit)
+        elif not self._sequence:
+            self.poke()
             self.clicked.emit()
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
-        menu.addAction("Chat", self.clicked.emit)
+        menu.addAction(f"Talk to {config.CAT_NAME}", self.clicked.emit)
+        stop = menu.addAction("Stop what you're doing", self.stop_requested.emit)
+        stop.setEnabled(self._busy)
         menu.addAction("Look at my screen", self.look_requested.emit)
         watch = QAction("Watch mode (pop up tips)", menu, checkable=True, checked=self._watching)
         watch.toggled.connect(self.watch_toggled.emit)

@@ -37,3 +37,25 @@ def is_coding_tool(name: str, args: dict) -> bool:
         target = " ".join(str(args.get(k, "")) for k in ("file_path", "path", "pattern", "glob"))
         return bool(_CODE_FILE.search(target))
     return False
+
+
+_TEXT_FILE = re.compile(r"\.(tex|bib|md|txt|rtf|docx?|odt|pages)$", re.IGNORECASE)
+_CODE_PATH = re.compile(_CODE_FILE.pattern.replace(r")\b", r")$"), re.IGNORECASE)
+
+
+def action_label(name: str, args: dict) -> str | None:
+    """What a tool call did, in the words the cat says in its speech cloud afterwards."""
+    if name in ("Edit", "Write", "NotebookEdit"):
+        path = str(args.get("file_path") or args.get("notebook_path") or "")
+        if _TEXT_FILE.search(path):
+            return "Text changed"
+        if _CODE_PATH.search(path):
+            return "Code changed"
+        return "File changed"
+    short = name.rsplit("__", 1)[-1]
+    return {
+        "Bash": "Command run",
+        "copy_to_clipboard": "Copied to clipboard",
+        "remember": "Noted",
+        "open_in_editor": "Opened it for you",
+    }.get(short)
