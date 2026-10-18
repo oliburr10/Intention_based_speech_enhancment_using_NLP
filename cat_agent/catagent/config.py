@@ -8,8 +8,9 @@ from pathlib import Path
 CAT_NAME = os.environ.get("CAT_NAME", "Ginger")
 USER_NAME = os.environ.get("CAT_USER_NAME", getpass.getuser())
 
-# Which Claude model powers it.
-MODEL = os.environ.get("CAT_MODEL", "claude-opus-5-5")
+# Which Claude model powers it. Haiku is the cheapest and handles everyday coding well;
+# for big, messy jobs try CAT_MODEL=claude-sonnet-5-5 or claude-opus-5-5 (smarter, pricier).
+MODEL = os.environ.get("CAT_MODEL", "claude-haiku-5-5")
 
 # Where the cat keeps its memory and state.
 HOME_DIR = Path(os.environ.get("CAT_HOME", Path.home() / ".ginger"))

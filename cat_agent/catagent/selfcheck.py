@@ -77,7 +77,10 @@ async def check_agent() -> None:
     report(not extra or None, "No unexpected tools", ", ".join(extra))
     report("meow" in reply.lower(), "Answers sensibly", reply.strip()[:40])
     if result is not None and result.total_cost_usd is not None:
-        print(f"     (that check cost ${result.total_cost_usd:.4f})")
+        usage = next(iter((result.model_usage or {}).values()), None)
+        guessed = getattr(usage, "costBasis", None) == "unknown" or (isinstance(usage, dict) and usage.get("costBasis") == "unknown")
+        note = "; a rough estimate, since this SDK version doesn't know the model's price yet" if guessed else ""
+        print(f"     (that check cost about ${result.total_cost_usd:.4f}{note})")
 
 
 def check_mac() -> None:

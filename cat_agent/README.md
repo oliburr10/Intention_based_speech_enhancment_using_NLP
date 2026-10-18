@@ -139,7 +139,7 @@ permission question answered "Allow". Then each result is graded like a code rev
 - **Tests added:** for the feature task, it wrote tests for the new code
 
 ```bash
-python -m evals.run                    # all tasks (roughly $1-2 of model usage)
+python -m evals.run                    # all tasks (a few cents on Haiku)
 python -m evals.run grades_crash       # just one
 python -m evals.run --keep             # keep the folders so you can read what it changed
 ```
@@ -179,8 +179,9 @@ Results, the cat's patches and a log of every step it took go to
 
 Things to know:
 
-- **Cost and time:** each issue is a real coding session, usually a few minutes and roughly
-  $0.50–$3. `--budget` (dollars) and `--minutes` cap each issue. Ten issues is a quick,
+- **Cost and time:** each issue is a real coding session, usually a few minutes. That's
+  well under a dollar on Haiku, and roughly $0.50–$3 on Opus. `--budget` (dollars) and
+  `--minutes` cap each issue. Ten issues is a quick,
   rough check; the full 500 is a serious spend.
 - **Small samples are rough:** with 10 issues, one more or fewer solved moves the score by
   10 points. Use 50 or more before comparing with published numbers.
@@ -206,12 +207,26 @@ Things to know:
   asking** in the right-click menu. Even then, other commands still ask. If you use that
   mode, keep your projects in git so you can always see and undo what changed.
 
+### What it costs
+
+The cat uses your Anthropic API key, which is pay-as-you-go: you buy credits and each request
+uses a little. On the default Haiku model, an everyday request such as a LeetCode problem
+costs a fraction of a cent. To make sure you can never be surprised, set a monthly spending
+limit in the Claude Console, and leave watch mode off, since it's the only feature that
+spends money without you asking.
+
+The cost the self-check and the exam print is the Agent SDK's own estimate. If it says
+"rough estimate", the SDK doesn't know the model's price yet and the figure is too high. Your
+real bill is in the Claude Console.
+
 ## Making it yours
 
 All the settings are in [`catagent/config.py`](catagent/config.py):
 
 - `CAT_NAME`, `PERSONALITY`: who the cat is and how it talks
-- `MODEL`: which Claude model it uses
+- `MODEL`: which Claude model it uses. The default is Claude Haiku 5.5, the cheapest, which
+  scores 21/21 on the coding exam. For big, messy jobs, set `CAT_MODEL=claude-sonnet-5-5` or
+  `claude-opus-5-5`, which are smarter but cost more.
 - `WORKSPACE`: the folder it starts in (point it at your code folder)
 - `SCALE`: how big the cat is
 - `SLEEP_AFTER_SEC`: how long before it naps
