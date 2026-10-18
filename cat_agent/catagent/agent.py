@@ -28,9 +28,20 @@ from PySide6.QtCore import QObject, Signal
 
 from . import activity, config, context, memory, tools
 
-# Tools the cat may use without asking: they only read or look things up.
-# Everything else goes through can_use_tool, which asks you in the speech cloud.
+# The built-in tools the cat gets, pinned so it has the same toolbox on every machine
+# (selfcheck.py verifies them). Its own tools come on top, from tools.py.
+BUILTIN_TOOLS = ["Read", "Glob", "Grep", "Edit", "Write", "NotebookEdit", "Bash", "WebSearch", "WebFetch"]
+
+# What the cat may do without asking: reading, searching, and commands that only run tests
+# or look at git history. Everything else (edits, other commands) goes through can_use_tool,
+# which asks you in the speech cloud.
 SAFE_TOOLS = ["Read", "Glob", "Grep", "WebSearch", "WebFetch"]
+SAFE_COMMANDS = [
+    "pytest", "python -m pytest", "python3 -m pytest", "python -m unittest", "python3 -m unittest",
+    "npm test", "npm run test", "npm run lint", "ruff check", "flake8", "mypy",
+    "git status", "git diff", "git log", "git show",
+]
+FILE_EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 warnings.filterwarnings("ignore", category=CanUseToolShadowedWarning)
 
 WATCH_PROMPT = """\
@@ -43,6 +54,36 @@ want to know about right now (an error message, a failing test, a bug in visible
 LaTeX error, an obvious typo or wrong fact in their document), call show_tip once with what \
 is wrong and exactly where. Otherwise do nothing. Do not edit anything. End by replying \
 with a single word: DONE."""
+
+
+def build_options(
+    watcher: context.ContextWatcher,
+    show_tip,
+    set_hidden,
+    can_use_tool,
+    *,
+    cwd: str | None = None,
+    watch: bool = False,
+) -> ClaudeAgentOptions:
+    """The cat's full agent setup. The app, the self-check and the coding exam all use this."""
+    server, cat_tools = tools.build_server(watcher, show_tip=show_tip, set_hidden=set_hidden)
+    known = memory.load()
+    prompt = config.PERSONALITY
+    if known:
+        prompt += f"\nWhat you remember about {config.USER_NAME}:\n{known}\n"
+    options = ClaudeAgentOptions(
+        model=config.MODEL,
+        cwd=cwd or str(config.WORKSPACE),
+        system_prompt={"type": "preset", "preset": "claude_code", "append": prompt},
+        tools=BUILTIN_TOOLS,
+        mcp_servers={tools.SERVER_NAME: server},
+        allowed_tools=SAFE_TOOLS + [f"Bash({c}:*)" for c in SAFE_COMMANDS] + cat_tools,
+        can_use_tool=can_use_tool,
+    )
+    if watch:
+        options.disallowed_tools = ["Edit", "Write", "NotebookEdit", "Bash"]
+        options.max_turns = 8
+    return options
 
 
 def describe_tool(name: str, args: dict) -> str:
@@ -87,6 +128,7 @@ class AgentBridge(QObject):
         self._watching = False
         self._reset_turn()
         self.busy = False
+        self.auto_edit = False  # "Edit files without asking", from the cat's right-click menu
         self._thread = threading.Thread(target=self._run, name="cat-agent", daemon=True)
 
     # ---- called from the Qt thread -------------------------------------------------------
@@ -124,27 +166,13 @@ class AgentBridge(QObject):
         self._loop.run_until_complete(self._main())
 
     def _options(self, watch: bool = False) -> ClaudeAgentOptions:
-        server, cat_tools = tools.build_server(
+        return build_options(
             self._watcher,
             show_tip=self.tip.emit,
             set_hidden=self.hide_requested.emit,
-        )
-        known = memory.load()
-        prompt = config.PERSONALITY
-        if known:
-            prompt += f"\nWhat you remember about {config.USER_NAME}:\n{known}\n"
-        options = ClaudeAgentOptions(
-            model=config.MODEL,
-            cwd=str(config.WORKSPACE),
-            system_prompt={"type": "preset", "preset": "claude_code", "append": prompt},
-            mcp_servers={tools.SERVER_NAME: server},
-            allowed_tools=SAFE_TOOLS + cat_tools,
             can_use_tool=self._deny_all if watch else self._ask_user,
+            watch=watch,
         )
-        if watch:
-            options.disallowed_tools = ["Edit", "Write", "NotebookEdit", "Bash"]
-            options.max_turns = 8
-        return options
 
     async def _main(self) -> None:
         while True:
@@ -234,6 +262,8 @@ class AgentBridge(QObject):
     # ---- permissions ------------------------------------------------------------------------
 
     async def _ask_user(self, tool_name, tool_input, ctx):
+        if self.auto_edit and tool_name in FILE_EDIT_TOOLS:
+            return PermissionResultAllow()
         request_id = uuid.uuid4().hex
         future = self._loop.create_future()
         self._pending[request_id] = future

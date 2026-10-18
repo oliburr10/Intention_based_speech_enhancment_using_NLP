@@ -1,0 +1,5 @@
+{
+  "title": "Track down a bug from a customer report",
+  "prompt": "Customers say their invoice totals are sometimes a penny too low. For example, 3 items at £0.35 each (plus 20% VAT) comes out as £1.24, but it should be £1.26. Can you find out why and fix it?",
+  "max_changed_lines": 6
+}

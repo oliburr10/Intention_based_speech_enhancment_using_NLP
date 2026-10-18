@@ -36,6 +36,7 @@ class CatWidget(QWidget):
     look_requested = Signal()
     new_conversation_requested = Signal()
     watch_toggled = Signal(bool)
+    auto_edit_toggled = Signal(bool)
     quit_requested = Signal()
     stop_requested = Signal()
     moved = Signal()
@@ -57,6 +58,7 @@ class CatWidget(QWidget):
         self._pause_until = 0.0
         self._alert = False
         self._watching = False
+        self._auto_edit = False
         self._last_attention = time.monotonic()
         self._tick_count = 0
         self._press_pos: QPoint | None = None
@@ -90,6 +92,9 @@ class CatWidget(QWidget):
 
     def set_watching(self, watching: bool) -> None:
         self._watching = watching
+
+    def set_auto_edit(self, on: bool) -> None:
+        self._auto_edit = on
 
     def poke(self) -> None:
         """Something happened: wake up."""
@@ -239,6 +244,9 @@ class CatWidget(QWidget):
         watch = QAction("Watch mode (pop up tips)", menu, checkable=True, checked=self._watching)
         watch.toggled.connect(self.watch_toggled.emit)
         menu.addAction(watch)
+        auto_edit = QAction("Edit files without asking", menu, checkable=True, checked=self._auto_edit)
+        auto_edit.toggled.connect(self.auto_edit_toggled.emit)
+        menu.addAction(auto_edit)
         menu.addAction("New conversation", self.new_conversation_requested.emit)
         menu.addSeparator()
         menu.addAction(f"Quit {config.CAT_NAME}", self.quit_requested.emit)

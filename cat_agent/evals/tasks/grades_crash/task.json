@@ -1,0 +1,5 @@
+{
+  "title": "Fix a crash from a traceback",
+  "prompt": "I ran `python grades.py class.csv` and got this:\n\nTraceback (most recent call last):\n  File \"grades.py\", line 31, in <module>\n    main(sys.argv[1])\n  File \"grades.py\", line 25, in main\n    for student, avg in sorted(averages(read_grades(path)).items()):\n  File \"grades.py\", line 15, in read_grades\n    grades.setdefault(row[\"student\"], []).append(float(row[\"grade\"]))\nValueError: could not convert string to float: ''\n\nCan you fix it?",
+  "max_changed_lines": 10
+}

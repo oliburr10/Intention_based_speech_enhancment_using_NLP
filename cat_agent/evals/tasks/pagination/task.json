@@ -1,0 +1,5 @@
+{
+  "title": "Make the failing tests pass",
+  "prompt": "The tests in this project are failing. Can you fix it?",
+  "max_changed_lines": 8
+}

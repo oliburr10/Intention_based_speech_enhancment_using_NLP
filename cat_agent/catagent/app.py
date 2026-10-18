@@ -45,6 +45,7 @@ class CatApp:
         self.cat.look_requested.connect(self.look_at_screen)
         self.cat.new_conversation_requested.connect(self.agent.new_conversation)
         self.cat.watch_toggled.connect(self.set_watch_mode)
+        self.cat.auto_edit_toggled.connect(self.set_auto_edit)
         self.cat.stop_requested.connect(self.agent.stop_turn)
         self.cat.quit_requested.connect(self.quit)
 
@@ -78,6 +79,8 @@ class CatApp:
         self.cat.show()
         if state.get("watch"):
             self.set_watch_mode(True)
+        if state.get("auto_edit"):
+            self.set_auto_edit(True)
 
     # ---- talking to the cat ------------------------------------------------------------------
 
@@ -190,6 +193,12 @@ class CatApp:
         else:
             self.watch_timer.stop()
         self._save_state(watch=on)
+
+    def set_auto_edit(self, on: bool) -> None:
+        """Let the cat edit files without asking. Commands other than tests still ask."""
+        self.agent.auto_edit = on
+        self.cat.set_auto_edit(on)
+        self._save_state(auto_edit=on)
 
     def watch_tick(self) -> None:
         """Glance at the screen, but only when the user has moved on to something new and settled."""

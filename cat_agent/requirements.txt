@@ -1,4 +1,5 @@
 claude-agent-sdk>=0.2
 PySide6>=6.7
+pytest>=8  # the cat runs your tests with it, and the coding exam grades with it
 # Optional: hides the Dock icon so only the cat shows.
 pyobjc-framework-Cocoa; sys_platform == "darwin"

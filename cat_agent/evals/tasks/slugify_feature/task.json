@@ -1,0 +1,6 @@
+{
+  "title": "Build a feature from a spec and test it",
+  "prompt": "Please implement slugify in text_utils.py. The docstring says exactly how it should behave. Add tests for it too.",
+  "max_changed_lines": 40,
+  "must_add_tests": true
+}

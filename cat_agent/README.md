@@ -36,6 +36,12 @@ python run.py
 The Agent SDK ships with its own copy of the Claude Code engine, so nothing else needs
 installing. To avoid exporting the key every time, add the `export` line to `~/.zshrc`.
 
+Then check everything is set up:
+
+```bash
+python -m catagent.selfcheck
+```
+
 ### macOS permissions
 
 The first time the cat checks what you're doing, macOS asks for permission. If you
@@ -63,7 +69,7 @@ Restart the cat after you change these.
   change train.py?"), shows the change, and waits for **Allow** or **Don't**. Reading,
   searching and browsing happen without asking.
 - **Right-click** the cat for these options: *Talk to Ginger*, *Stop what you're doing*,
-  *Look at my screen*, *Watch mode*, *New conversation*, *Quit*.
+  *Look at my screen*, *Watch mode*, *Edit files without asking*, *New conversation*, *Quit*.
 - Each instruction automatically includes the app or file you were in just before clicking
   the cat, so "fix this" just works.
 - The cat's moods: `...` means it's thinking, and a red `!` means it has a tip for you.
@@ -100,6 +106,63 @@ screenshot, so watch mode is **off by default**.
 | Overleaf | It can see the page and tell you exactly what to change. If you sync the project locally (Overleaf's Git integration), it can edit the `.tex` files directly |
 | Google Docs | It can see the page and tell you exactly what to change and where. It can't edit Google Docs directly yet |
 
+## How do I know it actually works?
+
+Don't take the cat's word for it. Two commands check it for you.
+
+**1. The self-check** confirms the setup: Python and packages, that the agent can log in, the
+model, every tool the cat should have (and nothing unexpected), and on a Mac whether it can
+see your apps, take screenshots and use the clipboard. It costs one tiny model call.
+
+```bash
+python -m catagent.selfcheck
+```
+
+**2. The coding exam** checks the cat can really program. Each task in
+[`evals/tasks`](evals/tasks) is a small broken project plus a request like one you'd type:
+
+| Task | What it tests |
+|---|---|
+| `pagination` | "The tests are failing, fix it": two bugs in one file |
+| `grades_crash` | A pasted traceback, and an edge case the traceback doesn't mention |
+| `invoice_rounding` | A customer complaint where the bug lives in a different file from the symptom |
+| `slugify_feature` | Building a feature from a written spec, with tests |
+
+The cat works on a temporary copy, using exactly the same setup as the app, with every
+permission question answered "Allow". Then each result is graded like a code review:
+
+- **Correct:** hidden tests the cat never saw all pass, along with the project's own tests
+- **Honest:** it didn't edit or delete the existing tests to make them pass
+- **Tested:** it ran the tests itself
+- **Focused:** it changed only as many lines as the fix needs
+- **Tidy:** no stray files or debug prints left behind
+- **Tests added:** for the feature task, it wrote tests for the new code
+
+```bash
+python -m evals.run                    # all tasks (roughly $1-2 of model usage)
+python -m evals.run grades_crash       # just one
+python -m evals.run --keep             # keep the folders so you can read what it changed
+```
+
+Run it again whenever you change the model or the personality, so you know nothing got
+worse. To test a new kind of job, add a folder in `evals/tasks` with a `task.json`, a
+`project/` and `hidden_tests/`.
+
+### How the cat is set up to code well
+
+- Underneath, it runs the same agent as Claude Code, including Claude Code's own coding
+  instructions (the `claude_code` system prompt preset).
+- On top of that, its personality in [`catagent/config.py`](catagent/config.py) spells out how to
+  work like a careful programmer: read the code and its tests first, fix the real cause,
+  make the smallest change, never edit a test just to make it pass, add tests for new
+  behaviour, run the tests afterwards and say honestly whether they pass, and leave nothing
+  messy behind.
+- It can run test and git-inspection commands without asking (`pytest`, `npm test`,
+  `git diff`, ...). The full list is `SAFE_COMMANDS` in [`catagent/agent.py`](catagent/agent.py).
+  Edits and any other command still ask first, unless you turn on **Edit files without
+  asking** in the right-click menu. Even then, other commands still ask. If you use that
+  mode, keep your projects in git so you can always see and undo what changed.
+
 ## Making it yours
 
 All the settings are in [`catagent/config.py`](catagent/config.py):
@@ -128,6 +191,10 @@ catagent/
   agent.py        the Claude Agent SDK session, on a background asyncio thread
   activity.py     what counts as coding, and the "Code changed" style labels
   tools.py        the cat's own tools (screen, context, tips, clipboard, memory)
+  selfcheck.py    `python -m catagent.selfcheck`: is everything set up?
+evals/
+  run.py          `python -m evals.run`: the coding exam
+  tasks/          one folder per exam task: task.json, project/, hidden_tests/
   context.py      macOS helpers: frontmost app, browser tab, Word doc, screenshots
   memory.py       long-term memory file
   sprites.py      the pixel art
