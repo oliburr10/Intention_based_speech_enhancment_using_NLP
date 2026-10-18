@@ -108,7 +108,7 @@ screenshot, so watch mode is **off by default**.
 
 ## How do I know it actually works?
 
-Don't take the cat's word for it. Two commands check it for you.
+Don't take the cat's word for it. Three commands check it for you.
 
 **1. The self-check** confirms the setup: Python and packages, that the agent can log in, the
 model, every tool the cat should have (and nothing unexpected), and on a Mac whether it can
@@ -147,6 +147,49 @@ python -m evals.run --keep             # keep the folders so you can read what i
 Run it again whenever you change the model or the personality, so you know nothing got
 worse. To test a new kind of job, add a folder in `evals/tasks` with a `task.json`, a
 `project/` and `hidden_tests/`.
+
+**3. SWE-bench** is the standard benchmark for AI software engineers. It uses real GitHub
+issues from real Python projects (Django, sympy, scikit-learn, matplotlib, pytest and
+others), and grades each fix by running that project's own test suite, including tests
+written for the fix that the cat never sees. The default set, SWE-bench Verified, has 500
+issues that people have checked are fair and solvable. Published scores for AI coding
+agents are on [swebench.com](https://www.swebench.com).
+
+For each issue, the cat gets the project at the right commit in the task's official Docker
+container. It works on it with the same setup the app uses, plus a `run_in_project_env`
+tool that runs Python and the tests inside that container with its latest edits. Its
+change is then graded by the official SWE-bench harness.
+
+You need Docker Desktop running, and one extra install:
+
+```bash
+pip install -r evals/requirements-swebench.txt
+
+python -m evals.swebench --gold --sample 2    # free: grades SWE-bench's own reference fixes, to check grading works
+python -m evals.swebench                      # the cat on a random sample of 10 issues
+python -m evals.swebench --sample 50          # a more precise score
+python -m evals.swebench --instances django__django-11099 sympy__sympy-20590
+python -m evals.swebench --all                # all 500
+python -m evals.swebench --run-id run-20261018-1200   # resume an interrupted run
+```
+
+It prints which issues the cat resolved and its score, for example "Resolved 7/10 (70%)".
+Results, the cat's patches and a log of every step it took go to
+`~/.ginger/swebench/<run id>/`.
+
+Things to know:
+
+- **Cost and time:** each issue is a real coding session, usually a few minutes and roughly
+  $0.50–$3. `--budget` (dollars) and `--minutes` cap each issue. Ten issues is a quick,
+  rough check; the full 500 is a serious spend.
+- **Small samples are rough:** with 10 issues, one more or fewer solved moves the score by
+  10 points. Use 50 or more before comparing with published numbers.
+- **Docker images are big:** each issue's image is 1–3 GB. Clean up afterwards with
+  `docker image prune -a`.
+- **Apple Silicon Macs:** the images are built for Intel, so turn on *Use Rosetta for
+  x86_64/amd64 emulation* in Docker Desktop's settings. Everything runs, just slower.
+- **Docker Hub limits:** pulling many images can hit Docker Hub's download limit ("429 Too
+  Many Requests"). Signing in with a free account (`docker login`) raises it.
 
 ### How the cat is set up to code well
 
@@ -195,6 +238,7 @@ catagent/
 evals/
   run.py          `python -m evals.run`: the coding exam
   tasks/          one folder per exam task: task.json, project/, hidden_tests/
+  swebench.py     `python -m evals.swebench`: the cat on SWE-bench, graded by the official harness
   context.py      macOS helpers: frontmost app, browser tab, Word doc, screenshots
   memory.py       long-term memory file
   sprites.py      the pixel art

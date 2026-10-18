@@ -1,0 +1,3 @@
+# Extra packages for the SWE-bench benchmark (python -m evals.swebench). Also needs Docker.
+swebench>=5
+datasets
